@@ -1,1 +1,7 @@
 /jarbler-*.gem
+/.idea/.gitignore
+/.idea/jarbler.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/Gemfile.lock
