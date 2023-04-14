@@ -37,6 +37,7 @@ class JarMain {
             System.out.println("Extracting files from "+jarPath+" to "+ newFolder.getAbsolutePath());
             ProcessBuilder pb = new ProcessBuilder("jar", "-xf", jarPath);
             pb.directory(newFolder);
+            pb.redirectErrorStream(true);                                       // redirect error stream to output stream
             Process p = pb.start();
             InputStream is = p.getInputStream();
             int i = 0;
@@ -75,6 +76,8 @@ class JarMain {
         try {
             ProcessBuilder pb = new ProcessBuilder("java", "-cp", classpath, "org.jruby.Main",  "bin/rails", "server");
             pb.directory(new File(newFolder.getAbsolutePath()+File.separator+"rails_app"));
+            java.util.Map<String, String> env = pb.environment();
+            env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
             pb.redirectErrorStream(true);                                       // redirect error stream to output stream
             Process p = pb.start();
             InputStream is = p.getInputStream();

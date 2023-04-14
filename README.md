@@ -1,34 +1,34 @@
 # Jarbler
+Pack a Ruby on Rails application into an executable jar file.
 
-TODO: Delete this and the text below, and describe your gem
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/jarbler`. To experiment with that code, run `bin/console` for an interactive prompt.
+Jarbler allows you to create an self executing Java jar file containing your Ruby on Rails application.
+The application is executed using jRuby.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
 Install the gem and add to the application's Gemfile by executing:
 
-    $ bundle add UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+    $ bundle add jarbler --group "development
 
 If bundler is not being used to manage dependencies, install the gem by executing:
 
-    $ gem install UPDATE_WITH_YOUR_GEM_NAME_PRIOR_TO_RELEASE_TO_RUBYGEMS_ORG
+    $ gem install jarbler
 
 ## Usage
 
-TODO: Write usage instructions here
+To create a jar file simply run "jarble" in your application's root directory.
 
-## Development
+    $ jarble    
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+### Preconditions
+* The Rails app should be capable of running with jRuby
+* Gems with native extensions should not be used (e.g. sassc)
+  * if needed for development or test such Gems with native extensions should be moved to the development and test group in the Gemfile.
+  * Otherwise the created jar file may not be executable on all platforms and Java versions.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/jarbler.
+Bug reports and pull requests are welcome on GitHub at https://github.com/rammpeter/jarbler.
 
 ## License
 
