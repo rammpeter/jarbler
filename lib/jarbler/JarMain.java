@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,7 @@ import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.ArrayList;
+import java.util.Properties;
 
 class JarMain {
    static void deleteFolder(File file){
@@ -22,12 +24,19 @@ class JarMain {
       file.delete();
     }
 
+    // executed by java -jar <jar file name>
+    // No arguments are passed
     public static void main(String[] args) {
         System.out.println("Start java process in jar file");
+        if (args.length > 0) {
+            System.out.println("Arguments are: ");
+            for (String arg : args) {
+                System.out.println(arg);
+            }
+        }
         // create a new folder in temp directory
         File newFolder = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString());
         newFolder.mkdir();
-        System.out.println(newFolder.getAbsolutePath());
         // Get the path of the jar file
         String jarPath = JarMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         System.out.println("Executed jar file is: "+ jarPath);
@@ -70,15 +79,25 @@ class JarMain {
         classpaths.add(jrubyCoreFile.getAbsolutePath());
         classpaths.add(jrubyStdlibFile.getAbsolutePath());
         String classpath = String.join(File.pathSeparator, classpaths);
-        System.out.println("Classpath is : "+ classpath);
+
+        // read the property file and get the port number
+        String portNumber = "8080";
+        try {
+            Properties prop = new Properties();
+            prop.load(new FileInputStream(newFolder.getAbsolutePath()+File.separator+"jarbler.properties"));
+            portNumber = prop.getProperty("jarbler.port");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // execute java -jar jrubyJarFile with argument config.ru
         try {
-            ProcessBuilder pb = new ProcessBuilder("java", "-cp", classpath, "org.jruby.Main",  "bin/rails", "server");
+            ProcessBuilder pb = new ProcessBuilder("java", "-cp", classpath, "org.jruby.Main",  "bin/rails", "server", "-p", portNumber, "-e", "production");
             pb.directory(new File(newFolder.getAbsolutePath()+File.separator+"rails_app"));
             java.util.Map<String, String> env = pb.environment();
             env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
             pb.redirectErrorStream(true);                                       // redirect error stream to output stream
+            System.out.println("Executing: " + String.join(" ", pb.command()));
             Process p = pb.start();
             InputStream is = p.getInputStream();
             int i = 0;

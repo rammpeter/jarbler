@@ -1,4 +1,18 @@
 #!/usr/bin/env ruby
 
 require 'jarbler'
-Jarbler.run
+
+# call config if arguments are passed and argument = 'config'
+# otherwise call Jarbler.run
+if ARGV.empty?
+  Jarbler.run
+else
+  if  ARGV[0] == 'config' && ARGV.length == 1
+    Jarbler.config
+  else
+    puts "Invalid argument! Valid arguments are:"
+    puts "- no argument: build the jar"
+    puts "- config: create a template config file at #{Jarbler::Config::CONFIG_FILE}"
+  end
+end
+
