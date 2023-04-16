@@ -20,7 +20,7 @@ To create a jar file simply run "jarble" in your application's root directory.
 
     $ jarble
     
-To adjust Jarbler's configuration, modify the settings in config file ˋconfig/jarble.rbˋ. The template for this config file you create by executing
+To adjust Jarbler's configuration, modify the settings in config file ´config/jarble.rb´. The template for this config file you create by executing
 
     $ jarble config
 
