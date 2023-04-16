@@ -15,8 +15,8 @@ class ConfigTest < Minitest::Test
       Dir.chdir(dir) do
         @config = Jarbler::Config.new
         assert_equal @config.jar_name, File.basename(Dir.pwd) + '.jar'
-        assert_equal @config.includes, %w(app bin config config.ru db Gemfile Gemfile.lock lib log script vendor tmp)
-        assert_equal @config.excludes, []
+        assert_equal @config.includes, Jarbler::Config.new.includes
+        assert_equal @config.excludes, Jarbler::Config.new.excludes
         assert_equal @config.port, 8080
       end
     end

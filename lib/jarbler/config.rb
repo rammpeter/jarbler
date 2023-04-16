@@ -18,9 +18,8 @@ module Jarbler
 
     def initialize
       @jar_name = File.basename(Dir.pwd) + '.jar'
-      @dirs = %w(app bin config db Gemfile Gemfile.lock lib log script vendor tmp)
       @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log script vendor tmp)
-      @excludes = []
+      @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
       @port = 8080
       # execute additional block if given
       yield self if block_given?

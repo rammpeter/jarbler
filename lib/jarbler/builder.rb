@@ -17,6 +17,7 @@ module Jarbler
       end
 
       # requires that default Gem location is used (no BUNDLE_PATH: "vendor/bundle" in .bundle/config)
+      # TODO: allow BUNDLE_PATH: "vendor/bundle" in .bundle/config)
       jruby_jars_location = nil
       `bundle info jruby-jars`.lines.each do |line|
         if line.match(JRUBY_VERSION) && line.match(/Path:/)
@@ -48,14 +49,11 @@ module Jarbler
 
       # Search locations of gems in Gemfile.lock
       gem_search_locations = []
+      bundle_config_bundle_path = nil
+      # Add possible local config first in search list
+      gem_search_locations << bundle_config_bundle_path(rails_root) if bundle_config_bundle_path(rails_root)
       ENV['GEM_PATH'].split(':').each do |gem_path|
         gem_search_locations << gem_path
-      end
-      if File.exist?("#{rails_root}/.bundle/config")
-        bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
-        if bundle_config && bundle_config['BUNDLE_PATH']
-          gem_search_locations << "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
-        end
       end
 
       needed_gems = gem_dependencies
@@ -75,6 +73,12 @@ module Jarbler
           file.write("jarbler.port=#{config.port}\n")
         end
 
+        # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
+        config.excludes.each do |exclude|
+          FileUtils.rm_rf(exclude)
+        end
+
+        # create the jar file
         puts `jar cfm #{config.jar_name} Manifest.txt *`
         raise "jar call failed" unless $?.success?
 
@@ -143,9 +147,26 @@ module Jarbler
     end
 
     def config
-      @config = Config.create unless defined? @config
+      unless defined? @config
+       @config = Config.create
+       debug("Config attributes:")
+       @config.instance_variables.each do |var|
+         debug("#{var}: #{@config.instance_variable_get(var)}")
+       end
+       debug ""
+      end
       @config
     end
 
+    def bundle_config_bundle_path(rails_root)
+      bundle_path = nil # default
+      if File.exist?("#{rails_root}/.bundle/config")
+        bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
+        if bundle_config && bundle_config['BUNDLE_PATH']
+          bundle_path "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
+        end
+      end
+      bundle_path
+    end
   end
 end
