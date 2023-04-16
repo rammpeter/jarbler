@@ -75,7 +75,13 @@ module Jarbler
 
         # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
         config.excludes.each do |exclude|
-          FileUtils.rm_rf(exclude)
+          to_remove = "rails_app/#{exclude}"
+          if File.exist?(to_remove)
+            debug "Removing #{to_remove} from staging directory"
+            FileUtils.rm_rf(to_remove)
+          else
+            debug "Not removing #{to_remove} from staging directory, because it does not exist"
+          end
         end
 
         # create the jar file
