@@ -5,3 +5,5 @@
 /.idea/modules.xml
 /.idea/vcs.xml
 /Gemfile.lock
+/coverage/.last_run.json
+/coverage/.resultset.json.lock
