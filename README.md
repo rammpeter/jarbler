@@ -12,7 +12,7 @@ Install the gem and add to the application's Gemfile by executing:
 
 If bundler is not being used to manage dependencies, install the gem by executing:
 
-    $ gem install jarbler
+    $ gem install jarblerö
 
 ## Usage
 
@@ -35,7 +35,8 @@ The jar file created by Jarbler can be executed by
 
     $ java -jar <jar file name>
     
-Additional command line parameters are passed through to the executed Ruby app (like bin/rails)
+Additional command line parameters are passed through to the executed Ruby app (like "-p 8900" for different network port number with bin/rails)
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/rammpeter/jarbler.
