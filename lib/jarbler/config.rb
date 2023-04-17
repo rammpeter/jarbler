@@ -29,8 +29,34 @@ module Jarbler
       yield self if block_given?
     end
 
+    # Generate the template config file based on default values
     def create_config_file
-      raise "No config subdir in current directory" unless File.exist?('config') && File.directory?('config')
+      write_config_file("\
+# Name of the generated jar file
+# config.jar_name = '#{jar_name}'
+
+# Application directories or files to include in the jar file
+# config.includes = #{includes}
+
+# Application directories or files to exclude from the jar file
+# config.excludes = #{excludes}
+
+# The network port used by the application
+# config.port = #{port}
+
+# jRuby version to use if not the latest or the version from .ruby-version is used
+# config.jruby_version = '9.2.3.0'
+# config.jruby_version = #{"'#{jruby_version}'" || 'nil'}
+      ".split("\n"))
+    end
+
+    # write a config file with the given lines
+    # if the file exists, it is overwritten
+    # if the file does not exist, it is created
+    # @param [Array] lines is an array of strings
+    def write_config_file(lines)
+      lines = [lines] unless lines.is_a?(Array)
+      FileUtils.mkdir_p('config')
       raise "config file #{CONFIG_FILE} already exists in current directory" if File.exist?(CONFIG_FILE)
       File.open(CONFIG_FILE, 'w') do |file|
         file.write("# Jarbler configuration, see https://github.com/rammpeter/jarbler\n")
@@ -38,22 +64,9 @@ module Jarbler
         file.write("# uncomment and adjust if needed\n")
         file.write(" \n")
         file.write("Jarbler::Config.new do |config|\n")
-        file.write("  # Name of the generated jar file \n")
-        file.write("  # config.jar_name = '#{jar_name}'\n")
-        file.write(" \n")
-        file.write("  # Application directories or files to include in the jar file\n")
-        file.write("  # config.includes = #{includes}\n")
-        file.write(" \n")
-        file.write("  # Application directories or files to exclude from the jar file\n")
-        file.write("  # config.excludes = #{excludes}\n")
-        file.write(" \n")
-        file.write("  # The network port used by the application\n")
-        file.write("  # config.port = #{port}\n")
-        file.write(" \n")
-        file.write("  # jRuby version to use if not the latest or the version from .ruby-version is used\n")
-        file.write("  # config.jruby_version = '9.2.3.0'\n")
-        file.write("  # config.jruby_version = #{"'#{jruby_version}'" || 'nil'}\n")
-        file.write(" \n")
+        lines.each do |line|
+          file.write("  #{line}\n")
+        end
         file.write("end\n")
       end
     end
@@ -68,7 +81,11 @@ module Jarbler
         else
           # no .ruby-version file, use jRuby version of the latest Gem
           # Fetch the gem specification from Rubygems.org
-          jruby_jars_line = `gem search jruby-jars`.match(/^jruby-jars \((.*)\)/)
+          command = "gem search jruby-jars"
+          lines = `#{command}`
+          raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
+          jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
+          raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
           self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
           debug "jRuby version from latest jruby-jars gem: #{jruby_version}"
         end

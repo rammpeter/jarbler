@@ -10,10 +10,8 @@ class BuilderTest < Minitest::Test
   def test_exclude_dirs_removed
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        create_config_file(["config.excludes = hugo"])
-        File.open('hugo', 'w') do |file|
-          file.write("hugo")
-        end
+        prepare_gemfiles
+        Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
         @builder.build_jar
         assert !File.exist?('hugo')
       end
@@ -21,6 +19,15 @@ class BuilderTest < Minitest::Test
   end
 
   private
+  # Prepare Gemfiles in temporary test dir
+  def prepare_gemfiles
+    File.open('Gemfile', 'w') do |file|
+      file.write("source 'https://rubygems.org'\n")
+    end
+    `bundle install`
+  end
+
+  # Prepare existing config file in test dir
   def create_config_file(lines)
     FileUtils.mkdir_p('config')
     File.open(Jarbler::Config::CONFIG_FILE, 'w') do |file|

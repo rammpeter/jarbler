@@ -25,15 +25,13 @@ class ConfigTest < Minitest::Test
   def test_create_with_config_file
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.mkdir_p('config')
-        File.open(Jarbler::Config::CONFIG_FILE, 'w') do |file|
-          file.write("Jarbler::Config.new do |config|\n")
-          file.write("  config.jar_name = 'Modified.jar'\n")
-          file.write("  config.includes = ['modified']\n")
-          file.write("  config.excludes = ['modified']\n")
-          file.write("  config.port = 4040\n")
-          file.write("end\n")
-        end
+        Jarbler::Config.new.write_config_file("\
+          config.jar_name = 'Modified.jar'
+          config.includes = ['modified']
+          config.excludes = ['modified']
+          config.port = 4040
+        ")
+
         config = Jarbler::Config.create
         assert_equal config.jar_name, 'Modified.jar'
         assert_equal config.includes, ['modified']
@@ -45,7 +43,6 @@ class ConfigTest < Minitest::Test
   def test_create_config_file
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        FileUtils.mkdir_p('config')
         @config.create_config_file
         assert File.exist?(Jarbler::Config::CONFIG_FILE)
       end
@@ -59,12 +56,7 @@ class ConfigTest < Minitest::Test
         config = Jarbler::Config.create
         assert config.jruby_version =~ /\d+\.\d+\.\d+\.\d+/
         # Test value from config file
-        FileUtils.mkdir_p('config')
-        File.open(Jarbler::Config::CONFIG_FILE, 'w') do |file|
-          file.write("Jarbler::Config.new do |config|\n")
-          file.write("  config.jruby_version = '3.3.3.0'\n")
-          file.write("end\n")
-        end
+        Jarbler::Config.new.write_config_file("config.jruby_version = '3.3.3.0'")
         config = Jarbler::Config.create
         assert_equal config.jruby_version, '3.3.3.0'
       end

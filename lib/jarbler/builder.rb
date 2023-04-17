@@ -1,3 +1,5 @@
+require 'bundler'
+
 module Jarbler
   class Builder
     # Execute all functions needed to build the jar file
@@ -9,32 +11,16 @@ module Jarbler
 
       jarbler_lib_dir = __dir__
       app_root = Dir.pwd
-      puts "Project dir: #{app_root}"
+      debug "Project dir: #{app_root}"
 
-      requested_ruby_version = ensure_installed_jruby_jars(app_root)
+      exec_command  "gem install --no-doc jruby-jars -v #{config.jruby_version}" # Ensure that jruby-jars are installed in the requested version
+      copy_jruby_jars_sto_staging(staging_dir) # Copy the jruby jars to the staging directory
+      exec_command "javac -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
 
-      # requires that default Gem location is used (no BUNDLE_PATH: "vendor/bundle" in .bundle/config)
-      # TODO: allow BUNDLE_PATH: "vendor/bundle" in .bundle/config)
-      jruby_jars_location = nil
-      `bundle info jruby-jars`.lines.each do |line|
-        if line.match(JRUBY_VERSION) && line.match(/Path:/)
-          jruby_jars_location = line.split[1]
-          puts "Location of jRuby jars: #{jruby_jars_location}"
-        end
-      end
-
-      # Compile the Java files
-      puts `javac -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java`
-      raise "Java compilation failed" unless $?.success?
-
-      FileUtils.cp("#{jruby_jars_location}/lib/jruby-core-#{JRUBY_VERSION}-complete.jar", staging_dir)
-      FileUtils.cp("#{jruby_jars_location}/lib/jruby-stdlib-#{JRUBY_VERSION}.jar", staging_dir)
-
-
-      # Copy the Rails project to the staging directory
-      FileUtils.mkdir_p("#{staging_dir}/rails_app")
+      # Copy the application project to the staging directory
+      FileUtils.mkdir_p("#{staging_dir}/app_root")
       config.includes.each do |dir|
-        FileUtils.cp_r("#{app_root}/#{dir}", "#{staging_dir}/rails_app") if File.exist?("#{app_root}/#{dir}")
+        FileUtils.cp_r("#{app_root}/#{dir}", "#{staging_dir}/app_root") if File.exist?("#{app_root}/#{dir}")
       end
 
       # Get the needed Gems
@@ -46,7 +32,6 @@ module Jarbler
 
       # Search locations of gems in Gemfile.lock
       gem_search_locations = []
-      bundle_config_bundle_path = nil
       # Add possible local config first in search list
       gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
       ENV['GEM_PATH'].split(':').each do |gem_path|
@@ -72,7 +57,7 @@ module Jarbler
 
         # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
         config.excludes.each do |exclude|
-          to_remove = "rails_app/#{exclude}"
+          to_remove = "app_root/#{exclude}"
           if File.exist?(to_remove)
             debug "Removing #{to_remove} from staging directory"
             FileUtils.rm_rf(to_remove)
@@ -81,9 +66,7 @@ module Jarbler
           end
         end
 
-        # create the jar file
-        puts `jar cfm #{config.jar_name} Manifest.txt *`
-        raise "jar call failed" unless $?.success?
+        exec_command "jar cfm #{config.jar_name} Manifest.txt *" # create the jar file
 
         # place the jar in project directory
         FileUtils.cp(config.jar_name, app_root)
@@ -172,23 +155,27 @@ module Jarbler
       bundle_path
     end
 
-    # Determine the needed jRuby version from .ruby-version file if exists and ensure the Gem is installed
-    # @param [String] app_root The root directory of the rails/ruby project
-    def ensure_installed_jruby_jars(app_root)
-      requested_jruby_version = nil
-      if File.exist?("#{app_root}/.ruby-version")
-      else
-        # no .ruby-version file, use jRuby version of the latest
+    def copy_jruby_jars_sto_staging(staging_dir)
+      lines = exec_command "gem info jruby-jars -v #{config.jruby_version}"
+      jruby_jars_location = nil
+      lines.split("\n").each do |line|
+        if line.match(config.jruby_version) && line.match(/Installed at/)
+          jruby_jars_location = "#{line.split(':')[1].strip}/gems/jruby-jars-#{config.jruby_version}"
+          debug "Location of jRuby jars: #{jruby_jars_location}"
+          break
+        end
       end
+      raise "Could not determine location of jRuby jars in following output:\n#{lines}" unless jruby_jars_location
+      FileUtils.cp("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
+      FileUtils.cp("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
+    end
 
-      # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
-      requested_ruby_version = File.read("#{rails_root}/.ruby-version")[6..20].strip
-      puts "JRUBY_VERSION=#{JRUBY_VERSION}"
-      if requested_ruby_version != JRUBY_VERSION
-        puts "ERROR: requested jRuby version #{requested_ruby_version} from .ruby-version does not match current jRuby version #{JRUBY_VERSION}"
-        exit 1
-      end
-      requested_jruby_version
+    # Execute the command and return the output
+    def exec_command(command)
+      lines = `#{command}`
+      raise "Command \"#{command}\"failed with return code #{$?} and output:\n#{lines}" unless $?.success?
+      debug "Command \"#{command}\" executed successfully with following output:\n#{lines}"
+      lines
     end
   end
 end

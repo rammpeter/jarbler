@@ -93,7 +93,7 @@ class JarMain {
         // execute java -jar jrubyJarFile with argument config.ru
         try {
             ProcessBuilder pb = new ProcessBuilder("java", "-cp", classpath, "org.jruby.Main",  "bin/rails", "server", "-p", portNumber, "-e", "production");
-            pb.directory(new File(newFolder.getAbsolutePath()+File.separator+"rails_app"));
+            pb.directory(new File(newFolder.getAbsolutePath()+File.separator+"app_root"));
             java.util.Map<String, String> env = pb.environment();
             env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
             pb.redirectErrorStream(true);                                       // redirect error stream to output stream
