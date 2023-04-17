@@ -15,7 +15,7 @@ module Jarbler
 
       exec_command  "gem install --no-doc jruby-jars -v #{config.jruby_version}" # Ensure that jruby-jars are installed in the requested version
       copy_jruby_jars_sto_staging(staging_dir) # Copy the jruby jars to the staging directory
-      exec_command "javac -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
+      exec_command "javac -source 1.8 -target 1.8 -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
