@@ -51,4 +51,24 @@ class ConfigTest < Minitest::Test
       end
     end
   end
+
+  def test_define_jruby_version
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        # Test value from rubygems.org
+        config = Jarbler::Config.create
+        assert config.jruby_version =~ /\d+\.\d+\.\d+\.\d+/
+        # Test value from config file
+        FileUtils.mkdir_p('config')
+        File.open(Jarbler::Config::CONFIG_FILE, 'w') do |file|
+          file.write("Jarbler::Config.new do |config|\n")
+          file.write("  config.jruby_version = '3.3.3.0'\n")
+          file.write("end\n")
+        end
+        config = Jarbler::Config.create
+        assert_equal config.jruby_version, '3.3.3.0'
+      end
+    end
+  end
+
 end

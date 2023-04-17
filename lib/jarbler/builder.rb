@@ -1,20 +1,17 @@
 module Jarbler
   class Builder
+    # Execute all functions needed to build the jar file
+    # Should be executed in application directory of Rails/Ruby application
+    # @return [void]
     def build_jar
       # create a temporary directory for staging
       staging_dir = Dir.mktmpdir
 
       jarbler_lib_dir = __dir__
-      rails_root = Dir.pwd
-      puts "Project dir: #{rails_root}"
+      app_root = Dir.pwd
+      puts "Project dir: #{app_root}"
 
-      # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
-      requested_ruby_version = File.read("#{rails_root}/.ruby-version")[6..20].strip
-      puts "JRUBY_VERSION=#{JRUBY_VERSION}"
-      if requested_ruby_version != JRUBY_VERSION
-        puts "ERROR: requested jRuby version #{requested_ruby_version} from .ruby-version does not match current jRuby version #{JRUBY_VERSION}"
-        exit 1
-      end
+      requested_ruby_version = ensure_installed_jruby_jars(app_root)
 
       # requires that default Gem location is used (no BUNDLE_PATH: "vendor/bundle" in .bundle/config)
       # TODO: allow BUNDLE_PATH: "vendor/bundle" in .bundle/config)
@@ -37,11 +34,11 @@ module Jarbler
       # Copy the Rails project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/rails_app")
       config.includes.each do |dir|
-        FileUtils.cp_r("#{rails_root}/#{dir}", "#{staging_dir}/rails_app") if File.exist?("#{rails_root}/#{dir}")
+        FileUtils.cp_r("#{app_root}/#{dir}", "#{staging_dir}/rails_app") if File.exist?("#{app_root}/#{dir}")
       end
 
       # Get the needed Gems
-      raise "Gemfile.lock not found in #{rails_root}" unless File.exist?("#{rails_root}/Gemfile.lock")
+      raise "Gemfile.lock not found in #{app_root}" unless File.exist?("#{app_root}/Gemfile.lock")
 
       FileUtils.mkdir_p("#{staging_dir}/gems")
       FileUtils.mkdir_p("#{staging_dir}/gems/specifications")
@@ -51,7 +48,7 @@ module Jarbler
       gem_search_locations = []
       bundle_config_bundle_path = nil
       # Add possible local config first in search list
-      gem_search_locations << bundle_config_bundle_path(rails_root) if bundle_config_bundle_path(rails_root)
+      gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
       ENV['GEM_PATH'].split(':').each do |gem_path|
         gem_search_locations << gem_path
       end
@@ -89,7 +86,7 @@ module Jarbler
         raise "jar call failed" unless $?.success?
 
         # place the jar in project directory
-        FileUtils.cp(config.jar_name, rails_root)
+        FileUtils.cp(config.jar_name, app_root)
 
       end
 
@@ -173,6 +170,25 @@ module Jarbler
         end
       end
       bundle_path
+    end
+
+    # Determine the needed jRuby version from .ruby-version file if exists and ensure the Gem is installed
+    # @param [String] app_root The root directory of the rails/ruby project
+    def ensure_installed_jruby_jars(app_root)
+      requested_jruby_version = nil
+      if File.exist?("#{app_root}/.ruby-version")
+      else
+        # no .ruby-version file, use jRuby version of the latest
+      end
+
+      # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
+      requested_ruby_version = File.read("#{rails_root}/.ruby-version")[6..20].strip
+      puts "JRUBY_VERSION=#{JRUBY_VERSION}"
+      if requested_ruby_version != JRUBY_VERSION
+        puts "ERROR: requested jRuby version #{requested_ruby_version} from .ruby-version does not match current jRuby version #{JRUBY_VERSION}"
+        exit 1
+      end
+      requested_jruby_version
     end
   end
 end
