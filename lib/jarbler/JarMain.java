@@ -110,9 +110,8 @@ class JarMain {
         }
 
 
-        // remove the directory newFolder recursively
+        // remove the temp directory newFolder
         System.out.println("Removing all content in folder "+ newFolder.getAbsolutePath());
-        //deleteFolder(newFolder);
-
+        deleteFolder(newFolder);
     }
 }
