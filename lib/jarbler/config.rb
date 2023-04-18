@@ -81,14 +81,9 @@ module Jarbler
         else
           # no .ruby-version file, use jRuby version of the latest Gem
           # Fetch the gem specification from Rubygems.org
-          puts "########## BEFORE gem search"
-          puts `pwd`
-          puts `ls -lisa`
-
           command = "gem search --remote jruby-jars"
           lines = `#{command}`
           raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
-          puts "########## AFTER gem search"
           jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
           raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
           self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
