@@ -96,6 +96,7 @@ class JarMain {
             pb.directory(new File(newFolder.getAbsolutePath()+File.separator+"app_root"));
             java.util.Map<String, String> env = pb.environment();
             env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
+            env.put("GEM_HOME", newFolder.getAbsolutePath()+File.separator+"gems");
             pb.redirectErrorStream(true);                                       // redirect error stream to output stream
             System.out.println("Executing: " + String.join(" ", pb.command()));
             Process p = pb.start();
@@ -112,6 +113,7 @@ class JarMain {
 
         // remove the temp directory newFolder
         System.out.println("Removing all content in folder "+ newFolder.getAbsolutePath());
-        deleteFolder(newFolder);
+        // TODO: remove comment
+        //deleteFolder(newFolder);
     }
 }

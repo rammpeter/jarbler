@@ -6,3 +6,10 @@ source "https://rubygems.org"
 gemspec
 
 gem "rake", "~> 13.0"
+
+group(:test)  do
+  gem 'minitest'
+  gem 'minitest-reporters'
+  # needed for minitests
+  gem 'jruby-jars'
+end

@@ -1,4 +1,6 @@
 require 'minitest/autorun'
+require 'bundler'
+require 'bundler/lockfile_generator'
 require 'jarbler/builder'
 require 'jarbler/config'
 
@@ -19,12 +21,21 @@ class BuilderTest < Minitest::Test
   end
 
   private
-  # Prepare Gemfiles in temporary test dir
+  # Prepare Gemfiles in temporary test dir and install gems
   def prepare_gemfiles
     File.open('Gemfile', 'w') do |file|
       file.write("source 'https://rubygems.org'\n")
     end
-    `bundle install`
+    Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
+      Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
+      Bundler.setup # Load Gemfile
+      definition = Bundler.definition()
+      definition.resolve_remotely! # Install any missing gems and update existing gems
+      # Write the new Gemfile.lock file
+      File.open('Gemfile.lock', 'w') do
+      |file| file.write(Bundler::LockfileGenerator.generate(definition))
+      end
+    end
   end
 
   # Prepare existing config file in test dir
