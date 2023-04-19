@@ -69,7 +69,7 @@ class BuilderTest < Minitest::Test
       FileUtils.cp(filepath, dir)
       Dir.chdir(dir) do
         assert system("jar -xf #{File.basename(filepath)}")
-        puts `ls -lR`
+        # puts `ls -lR`
       end
     end
   end

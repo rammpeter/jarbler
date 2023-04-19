@@ -15,8 +15,9 @@ module Jarbler
       app_root = Dir.pwd
       debug "Project dir: #{app_root}"
 
+      # TODO: transform to internal bundler API call (check if jruby is installed + install if not)
       exec_command  "gem install --no-doc jruby-jars -v #{config.jruby_version}" # Ensure that jruby-jars are installed in the requested version
-      copy_jruby_jars_sto_staging(staging_dir) # Copy the jruby jars to the staging directory
+      ruby_version = copy_jruby_jars_sto_staging(staging_dir) # Copy the jruby jars to the staging directory
       exec_command "javac -source 1.8 -target 1.8 -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
@@ -28,14 +29,14 @@ module Jarbler
       # Get the needed Gems
       raise "Gemfile.lock not found in #{app_root}" unless File.exist?("#{app_root}/Gemfile.lock")
 
-      FileUtils.mkdir_p("#{staging_dir}/gems")
-      FileUtils.mkdir_p("#{staging_dir}/gems/specifications")
-      FileUtils.mkdir_p("#{staging_dir}/gems/gems")
+      gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_version}"
+      FileUtils.mkdir_p("#{gem_target_location}/gems")
+      FileUtils.mkdir_p("#{gem_target_location}/specifications")
 
       needed_gems = gem_dependencies  # get the full names of the dependencies
       gem_search_locations = collect_gem_search_locations(app_root)
       needed_gems.each do |gem_full_name|
-        copy_gem_to_staging(gem_full_name, staging_dir, gem_search_locations)
+        copy_gem_to_staging(gem_full_name, gem_target_location, gem_search_locations)
       end
 
       Dir.chdir(staging_dir) do
@@ -112,12 +113,12 @@ module Jarbler
     # @param [String] staging_dir Path to the staging directory
     # @param [Array] gem_search_locations Array of Gem locations
     # @return [void]
-    def copy_gem_to_staging(gem_full_name, staging_dir, gem_search_locations)
+    def copy_gem_to_staging(gem_full_name, gem_target_location, gem_search_locations)
       gem_search_locations.each do |gem_search_location|
         gem_dir = "#{gem_search_location}/gems/#{gem_full_name}"
         if File.exist?(gem_dir)
-          file_utils_copy(gem_dir, "#{staging_dir}/gems/gems")
-          file_utils_copy("#{gem_search_location}/specifications/#{gem_full_name}.gemspec", "#{staging_dir}/gems/specifications")
+          file_utils_copy(gem_dir, "#{gem_target_location}/gems")
+          file_utils_copy("#{gem_search_location}/specifications/#{gem_full_name}.gemspec", "#{gem_target_location}/specifications")
           return
         end
       end
@@ -189,6 +190,9 @@ module Jarbler
       bundle_path
     end
 
+    # Copy the jruby-jars to the staging directory
+    # @param [String] staging_dir Path to the staging directory
+    # @return [String] the ruby version of the jRuby jars
     def copy_jruby_jars_sto_staging(staging_dir)
       lines = exec_command "gem info jruby-jars -v #{config.jruby_version}"
       jruby_jars_location = nil
@@ -202,6 +206,14 @@ module Jarbler
       raise "Could not determine location of jRuby jars in following output:\n#{lines}" unless jruby_jars_location
       file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
       file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
+
+      # Get the according Ruby version for the current jRuby version
+      lines = exec_command "java -cp #{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar org.jruby.Main --version"
+      match_result = lines.match(/\(.*\)/)
+      raise "Could not determine Ruby version for jRuby #{config.jruby_version} in following output:\n#{lines}" unless match_result
+      ruby_version = match_result[0].tr('()', '')
+      debug "Corresponding Ruby version for jRuby (#{config.jruby_version}): #{ruby_version}"
+      ruby_version
     end
 
     # Execute the command and return the output
@@ -224,4 +236,5 @@ module Jarbler
       raise
     end
   end
+
 end
