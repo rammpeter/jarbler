@@ -114,11 +114,9 @@ class JarMain {
             e.printStackTrace();
         }
 
-
         // remove the temp directory newFolder
-        System.out.println("Removing all content in folder "+ newFolder.getAbsolutePath());
-        // TODO: remove comment
-        //deleteFolder(newFolder);
+        System.out.println("jRuby program terminated, removing temporary folder "+ newFolder.getAbsolutePath());
+        deleteFolder(newFolder);
     }
 
     private static void unzip(String fileZip, String destination) throws IOException {
