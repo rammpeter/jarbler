@@ -13,6 +13,16 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.lang.ClassNotFoundException;
+import java.lang.NoSuchMethodException;
+import java.lang.IllegalAccessException;
+import java.lang.InstantiationException;
+
 
 class JarMain {
    static void deleteFolder(File file){
@@ -72,13 +82,8 @@ class JarMain {
                 jrubyStdlibFile = file;
             }
         }
-        System.out.println("jruby core jar file is  : "+ jrubyCoreFile.getAbsolutePath());
-        System.out.println("jruby stdlib jar file is: "+ jrubyStdlibFile.getAbsolutePath());
-
-        ArrayList<String> classpaths = new ArrayList<String>();
-        classpaths.add(jrubyCoreFile.getAbsolutePath());
-        classpaths.add(jrubyStdlibFile.getAbsolutePath());
-        String classpath = String.join(File.pathSeparator, classpaths);
+        // System.out.println("jruby core jar file is  : "+ jrubyCoreFile.getAbsolutePath());
+        // System.out.println("jruby stdlib jar file is: "+ jrubyStdlibFile.getAbsolutePath());
 
         // read the property file and get the port number
         String portNumber = "8080";
@@ -92,26 +97,44 @@ class JarMain {
 
         // TODO: remove files version specific JDBC drivers according to Java version (configured in jarble.rb)
 
-        // execute the jar file
+
+        System.setProperty("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");      // not really necessray for Rails
+        System.setProperty("GEM_HOME", newFolder.getAbsolutePath()+File.separator+"gems");      // not really necessray for Rails
+        System.setProperty("BUNDLE_PATH", newFolder.getAbsolutePath()+File.separator+"gems");   // this drives bundler for rails app
+        System.setProperty("BUNDLE_WITHOUT", "test:development");  // exclude test and development dependencies from Gemfile check
+
         try {
-            ProcessBuilder pb = new ProcessBuilder("java", "-cp", classpath, "org.jruby.Main",  "bin/rails", "server", "-p", portNumber, "-e", "production");
-            pb.directory(new File(newFolder.getAbsolutePath()+File.separator+"app_root"));
-            java.util.Map<String, String> env = pb.environment();
-            env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
-            env.put("GEM_HOME", newFolder.getAbsolutePath()+File.separator+"gems");
-            env.put("BUNDLE_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
-            env.put("BUNDLE_WITHOUT", "test:development");  // exclude test and development dependencies from Gemfile check
-            pb.redirectErrorStream(true);                                       // redirect error stream to output stream
-            System.out.println("Executing: " + String.join(" ", pb.command()));
-            Process p = pb.start();
-            InputStream is = p.getInputStream();
-            int i = 0;
-            while ((i = is.read()) != -1) {
-                System.out.print((char) i);
-            }
-            is.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            // Load the Jar file
+            URLClassLoader classLoader = new URLClassLoader(new URL[]{
+                new URL("file://" + jrubyCoreFile.getAbsolutePath()),
+                new URL("file://" + jrubyStdlibFile.getAbsolutePath())
+            });
+
+            // Load the class
+            Class<?> clazz = classLoader.loadClass("org.jruby.Main");
+
+            // Get the method
+            Method mainMethod = clazz.getMethod("main", String[].class);
+
+            // Create an instance of the class
+            Object instance = clazz.newInstance();
+
+            // Call the method
+            String[] mainArgs = {"bin/rails", "server", "-p", portNumber, "-e", "production"}; // Set the command-line arguments
+            System.setProperty("user.dir", newFolder.getAbsolutePath()+File.separator+"app_root");
+            mainMethod.invoke(null, (Object)mainArgs);
+        } catch (InvocationTargetException e) {
+            e.getCause().printStackTrace();
+        } catch (MalformedURLException e) {
+            e.getCause().printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.getCause().printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.getCause().printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.getCause().printStackTrace();
+        } catch (InstantiationException e) {
+            e.getCause().printStackTrace();
         }
 
         // remove the temp directory newFolder
