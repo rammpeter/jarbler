@@ -39,7 +39,6 @@ class JarMain {
         newFolder.mkdir();
         // Get the path of the jar file
         String jarPath = JarMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        System.out.println("Executed jar file is: "+ jarPath);
 
         // extract the jarFile by executing jar -xf jarFileName
         try {
@@ -64,7 +63,6 @@ class JarMain {
         File jrubyCoreFile = null;
         File jrubyStdlibFile = null;
         for (File file : files) {
-            System.out.println(file.getName());
             if (file.getName().startsWith("jruby-core") && file.getName().endsWith(".jar")) {
                 jrubyCoreFile = file;
             }
@@ -72,8 +70,8 @@ class JarMain {
                 jrubyStdlibFile = file;
             }
         }
-        System.out.println("jruby core jar file is  : "+ jrubyCoreFile.getAbsolutePath());
-        System.out.println("jruby stdlib jar file is: "+ jrubyStdlibFile.getAbsolutePath());
+        //System.out.println("jruby core jar file is  : "+ jrubyCoreFile.getAbsolutePath());
+        //System.out.println("jruby stdlib jar file is: "+ jrubyStdlibFile.getAbsolutePath());
 
         ArrayList<String> classpaths = new ArrayList<String>();
         classpaths.add(jrubyCoreFile.getAbsolutePath());
@@ -98,6 +96,7 @@ class JarMain {
             env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
             env.put("GEM_HOME", newFolder.getAbsolutePath()+File.separator+"gems");
             env.put("BUNDLE_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
+            env.put("BUNDLE_WITHOUT", "test:development");  // exclude test and development dependencies from Gemfile check
             pb.redirectErrorStream(true);                                       // redirect error stream to output stream
             System.out.println("Executing: " + String.join(" ", pb.command()));
             Process p = pb.start();

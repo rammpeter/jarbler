@@ -21,7 +21,7 @@ module Jarbler
 
     def initialize
       @jar_name = File.basename(Dir.pwd) + '.jar'
-      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log script vendor tmp)
+      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public script vendor tmp)
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
       @port = 8080
       @jruby_version = nil  # determined automatically at runtime
@@ -37,9 +37,11 @@ module Jarbler
 
 # Application directories or files to include in the jar file
 # config.includes = #{includes}
+# config.includes << 'additional'
 
 # Application directories or files to exclude from the jar file
 # config.excludes = #{excludes}
+# config.excludes << 'additional'
 
 # The network port used by the application
 # config.port = #{port}

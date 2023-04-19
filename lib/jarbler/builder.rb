@@ -125,7 +125,7 @@ module Jarbler
       raise "Gem #{gem_name} (#{gem_version}) not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
-    # Read the dependencies from Gemfile.lock and Gemfile
+    # Read the default/production dependencies from Gemfile.lock and Gemfile
     # @return [Array] Array with full names of dependencies
     def gem_dependencies
       needed_gems = []
@@ -142,18 +142,9 @@ module Jarbler
         # find lockfile record for Gemfile spec
         lockfile_spec = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == gemfile_spec.name }
         if lockfile_spec
-          needed_gems << lockfile_spec.full_name
-          debug "Direct Gem: #{lockfile_spec.full_name}"
-          lockfile_spec.dependencies.each do |lockfile_spec_dep|
-            lockfile_spec = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == lockfile_spec_dep.name }
-            if lockfile_spec
-              needed_gems << lockfile_spec.full_name
-              debug "Indirect Gem: #{lockfile_spec.full_name}"
-            else
-              debug "Gem #{lockfile_spec_dep.name} not found in Gemfile.lock"
-            end
-          end
-
+          needed_gems << lockfile_spec.full_name unless needed_gems.include?(lockfile_spec.full_name)
+          debug "Direct Gem dependency: #{lockfile_spec.full_name}"
+          add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
           debug "Gem #{gemfile_spec.name} not found in Gemfile.lock"
         end
@@ -161,6 +152,25 @@ module Jarbler
       needed_gems.uniq.sort
     end
 
+    # recurively find all indirect dependencies
+    # @param [Array] lockfile_specs Array of Bundler::LockfileParser::Spec objects
+    # @param [Bundler::LockfileParser::Spec] lockfile_spec current lockfile spec to check for their dependencies
+    # @param [Array] needed_gems Array with full names of already found dependencies, add findings here
+    # @return [void]
+    def add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
+      lockfile_spec.dependencies.each do |lockfile_spec_dep|
+        lockfile_spec_found = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == lockfile_spec_dep.name }
+        if lockfile_spec_found
+          debug "Indirect Gem dependency from #{lockfile_spec.full_name}: #{lockfile_spec_found.full_name}"
+          unless needed_gems.include?(lockfile_spec_found.full_name)
+            needed_gems << lockfile_spec_found.full_name
+            add_indirect_dependencies(lockfile_specs, lockfile_spec_found, needed_gems)
+          end
+        else
+          debug "Gem #{lockfile_spec_dep.name} not found in Gemfile.lock"
+        end
+      end
+    end
     def debug(msg)
       puts msg if ENV['DEBUG']
     end
