@@ -1,4 +1,6 @@
 require 'bundler'
+require 'find'
+require 'fileutils'
 
 module Jarbler
   class Builder
@@ -20,7 +22,7 @@ module Jarbler
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
       config.includes.each do |dir|
-        FileUtils.cp_r("#{app_root}/#{dir}", "#{staging_dir}/app_root") if File.exist?("#{app_root}/#{dir}")
+        file_utils_copy("#{app_root}/#{dir}", "#{staging_dir}/app_root") if File.exist?("#{app_root}/#{dir}")
       end
 
       # Get the needed Gems
@@ -30,17 +32,10 @@ module Jarbler
       FileUtils.mkdir_p("#{staging_dir}/gems/specifications")
       FileUtils.mkdir_p("#{staging_dir}/gems/gems")
 
-      # Search locations of gems in Gemfile.lock
-      gem_search_locations = []
-      # Add possible local config first in search list
-      gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
-      ENV['GEM_PATH'].split(':').each do |gem_path|
-        gem_search_locations << gem_path
-      end
-
-      needed_gems = gem_dependencies
-      needed_gems.each do |gem|
-        copy_gem_to_staging(gem[:name], gem[:version], staging_dir, gem_search_locations)
+      needed_gems = gem_dependencies  # get the full names of the dependencies
+      gem_search_locations = collect_gem_search_locations(app_root)
+      needed_gems.each do |gem_full_name|
+        copy_gem_to_staging(gem_full_name, staging_dir, gem_search_locations)
       end
 
       Dir.chdir(staging_dir) do
@@ -69,7 +64,7 @@ module Jarbler
         exec_command "jar cfm #{config.jar_name} Manifest.txt *" # create the jar file
 
         # place the jar in project directory
-        FileUtils.cp(config.jar_name, app_root)
+        file_utils_copy(config.jar_name, app_root)
 
       end
 
@@ -79,19 +74,58 @@ module Jarbler
     end
 
     private
-    def copy_gem_to_staging(gem_name, gem_version, staging_dir, gem_search_locations)
+
+    # Find the locations where Gems are installed
+    # @param [String] app_root Application root directory
+    # @return [Array] Array of Gem locations
+    def collect_gem_search_locations(app_root)
+      # Search locations of gems in Gemfile.lock
+      possible_gem_search_locations = []
+      # Add possible local config first in search list
+      possible_gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
+      ENV['GEM_PATH'].split(':').each do |gem_path|
+        possible_gem_search_locations << gem_path
+      end
+      debug "Possible Gem locations: #{possible_gem_search_locations}"
+      gem_search_locations = []
+      # Check where inside this location the gems may be installed
+      possible_gem_search_locations.each do |gem_search_location|
+        valid_gem_search_location = nil # No valid path found yet
+        Find.find(gem_search_location) do |path|
+          if File.directory?(path) && File.exist?("#{path}/specifications") && File.exist?("#{path}/gems")
+            valid_gem_search_location = path # Found a valid path
+            Find.prune # Do not search deeper
+          end
+        end
+        if valid_gem_search_location
+          gem_search_locations << valid_gem_search_location
+        else
+          debug "No valid gem location found in #{gem_search_location}"
+        end
+      end
+      debug "Valid Gem locations: #{gem_search_locations}"
+      gem_search_locations
+    end
+
+    # Copy the Gem elements to the staging directory
+    # @param [String] gem_full_name Full name of the Gem including version and platform
+    # @param [String] staging_dir Path to the staging directory
+    # @param [Array] gem_search_locations Array of Gem locations
+    # @return [void]
+    def copy_gem_to_staging(gem_full_name, staging_dir, gem_search_locations)
       gem_search_locations.each do |gem_search_location|
-        gem_dir = "#{gem_search_location}/gems/#{gem_name}-#{gem_version}"
+        gem_dir = "#{gem_search_location}/gems/#{gem_full_name}"
         if File.exist?(gem_dir)
-          FileUtils.cp_r(gem_dir, "#{staging_dir}/gems/gems")
-          FileUtils.cp("#{gem_search_location}/specifications/#{gem_name}-#{gem_version}.gemspec", "#{staging_dir}/gems/specifications")
+          file_utils_copy(gem_dir, "#{staging_dir}/gems/gems")
+          file_utils_copy("#{gem_search_location}/specifications/#{gem_full_name}.gemspec", "#{staging_dir}/gems/specifications")
           return
         end
       end
+      raise "Gem #{gem_name} (#{gem_version}) not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
     # Read the dependencies from Gemfile.lock and Gemfile
-    # @return [Array] Array of dependencies
+    # @return [Array] Array with full names of dependencies
     def gem_dependencies
       needed_gems = []
       lockfile_specs = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
@@ -107,15 +141,13 @@ module Jarbler
         # find lockfile record for Gemfile spec
         lockfile_spec = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == gemfile_spec.name }
         if lockfile_spec
-          needed_gem = { name: gemfile_spec.name, version: lockfile_spec.version.version }
-          needed_gems << needed_gem
-          debug "Direct Gem: #{needed_gem[:name]} #{needed_gem[:version]}"
+          needed_gems << lockfile_spec.full_name
+          debug "Direct Gem: #{lockfile_spec.full_name}"
           lockfile_spec.dependencies.each do |lockfile_spec_dep|
             lockfile_spec = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == lockfile_spec_dep.name }
             if lockfile_spec
-              needed_gem =  { name: lockfile_spec_dep.name, version: lockfile_spec.version.version }
-              needed_gems << needed_gem
-              debug "Indirect Gem: #{needed_gem[:name]} #{needed_gem[:version]}"
+              needed_gems << lockfile_spec.full_name
+              debug "Indirect Gem: #{lockfile_spec.full_name}"
             else
               debug "Gem #{lockfile_spec_dep.name} not found in Gemfile.lock"
             end
@@ -125,7 +157,7 @@ module Jarbler
           debug "Gem #{gemfile_spec.name} not found in Gemfile.lock"
         end
       end
-      needed_gems.uniq.sort{ |a,b| a[:name] <=> b[:name]}
+      needed_gems.uniq.sort
     end
 
     def debug(msg)
@@ -144,12 +176,14 @@ module Jarbler
       @config
     end
 
+    # Check if there is an additional local bundle path in .bundle/config
     def bundle_config_bundle_path(rails_root)
       bundle_path = nil # default
       if File.exist?("#{rails_root}/.bundle/config")
         bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
         if bundle_config && bundle_config['BUNDLE_PATH']
-          bundle_path "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
+          bundle_path = "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
+          debug "Local Gem path configured in #{rails_root}/.bundle/config: #{bundle_path}"
         end
       end
       bundle_path
@@ -166,8 +200,8 @@ module Jarbler
         end
       end
       raise "Could not determine location of jRuby jars in following output:\n#{lines}" unless jruby_jars_location
-      FileUtils.cp("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
-      FileUtils.cp("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
+      file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
+      file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
     end
 
     # Execute the command and return the output
@@ -176,6 +210,18 @@ module Jarbler
       raise "Command \"#{command}\"failed with return code #{$?} and output:\n#{lines}" unless $?.success?
       debug "Command \"#{command}\" executed successfully with following output:\n#{lines}"
       lines
+    end
+
+    # Copy file or directory with error handling
+    def file_utils_copy(source, destination)
+      if File.exist?(source) && File.directory?(source)
+        FileUtils.cp_r(source, destination)
+      else
+        FileUtils.cp(source, destination)
+      end
+    rescue Exception
+      puts "Error copying #{source} to #{destination}"
+      raise
     end
   end
 end

@@ -97,6 +97,7 @@ class JarMain {
             java.util.Map<String, String> env = pb.environment();
             env.put("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
             env.put("GEM_HOME", newFolder.getAbsolutePath()+File.separator+"gems");
+            env.put("BUNDLE_PATH", newFolder.getAbsolutePath()+File.separator+"gems");
             pb.redirectErrorStream(true);                                       // redirect error stream to output stream
             System.out.println("Executing: " + String.join(" ", pb.command()));
             Process p = pb.start();
