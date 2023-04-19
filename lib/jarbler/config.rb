@@ -46,9 +46,11 @@ module Jarbler
 # The network port used by the application
 # config.port = #{port}
 
-# jRuby version to use if not the latest or the version from .ruby-version is used
+# Use certail jRuby version
+# if not set (nil) then the version defined in .ruby-version
+# if not jRuby version defined here or in .ruby-version then the latest available jRuby version is used
 # config.jruby_version = '9.2.3.0'
-# config.jruby_version = #{"'#{jruby_version}'" || 'nil'}
+# config.jruby_version = nil
       ".split("\n"))
     end
 
@@ -59,7 +61,7 @@ module Jarbler
     def write_config_file(lines)
       lines = [lines] unless lines.is_a?(Array)
       FileUtils.mkdir_p('config')
-      raise "config file #{CONFIG_FILE} already exists in current directory" if File.exist?(CONFIG_FILE)
+      raise "config file #{CONFIG_FILE} already exists in current directory! Please move file temporary and try again." if File.exist?(CONFIG_FILE)
       File.open(CONFIG_FILE, 'w') do |file|
         file.write("# Jarbler configuration, see https://github.com/rammpeter/jarbler\n")
         file.write("# values in comments are the default values\n")
@@ -71,6 +73,7 @@ module Jarbler
         end
         file.write("end\n")
       end
+      puts "Jarbler: Created config file #{CONFIG_FILE}"
     end
 
     # define jRuby version if not set in config file
