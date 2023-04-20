@@ -1,6 +1,6 @@
 module Jarbler
   class Config
-    attr_accessor :jar_name, :includes, :excludes, :port, :jruby_version
+    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params
 
     CONFIG_FILE = 'config/jarble.rb'
     # create instence of Config class with defaults or from config file
@@ -21,10 +21,11 @@ module Jarbler
 
     def initialize
       @jar_name = File.basename(Dir.pwd) + '.jar'
-      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public script vendor tmp)
+      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
-      @port = 8080
       @jruby_version = nil  # determined automatically at runtime
+      @executable = 'bin/rails'
+      @executable_params = %w(server -e production -p 8080)
       # execute additional block if given
       yield self if block_given?
     end
@@ -43,14 +44,17 @@ module Jarbler
 # config.excludes = #{excludes}
 # config.excludes << 'additional'
 
-# The network port used by the application
-# config.port = #{port}
-
 # Use certail jRuby version
 # if not set (nil) then the version defined in .ruby-version
 # if not jRuby version defined here or in .ruby-version then the latest available jRuby version is used
 # config.jruby_version = '9.2.3.0'
 # config.jruby_version = nil
+
+# The Ruby executable file to run, e.g. 'bin/rails' or 'bin/rake'
+# config.executable = '#{executable}'
+
+# Additional command line parameters for the Ruby executable
+# config.executable_params = #{executable_params}
       ".split("\n"))
     end
 
@@ -73,7 +77,7 @@ module Jarbler
         end
         file.write("end\n")
       end
-      puts "Jarbler: Created config file #{CONFIG_FILE}"
+      puts "Jarbler: Created config file #{Dir.pwd}/#{CONFIG_FILE}"
     end
 
     # define jRuby version if not set in config file
@@ -100,6 +104,5 @@ module Jarbler
     def debug(msg)
       puts msg if ENV['DEBUG']
     end
-
   end
 end

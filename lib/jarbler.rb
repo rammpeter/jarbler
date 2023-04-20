@@ -13,7 +13,7 @@ require_relative "jarbler/config"
 
 module Jarbler
   def self.run
-    puts "Jarbler release #{VERSION}"
+    puts "Jarbler release #{VERSION}, #{VERSION_DATE} ( https://github.com/rammpeter/jarbler )"
     Builder.new.build_jar
   end
 

@@ -17,7 +17,6 @@ class ConfigTest < Minitest::Test
         assert_equal @config.jar_name, File.basename(Dir.pwd) + '.jar'
         assert_equal @config.includes, Jarbler::Config.new.includes
         assert_equal @config.excludes, Jarbler::Config.new.excludes
-        assert_equal @config.port, 8080
       end
     end
   end
@@ -29,14 +28,12 @@ class ConfigTest < Minitest::Test
           config.jar_name = 'Modified.jar'
           config.includes = ['modified']
           config.excludes = ['modified']
-          config.port = 4040
         ")
 
         config = Jarbler::Config.create
         assert_equal config.jar_name, 'Modified.jar'
         assert_equal config.includes, ['modified']
         assert_equal config.excludes, ['modified']
-        assert_equal config.port, 4040
       end
     end
   end

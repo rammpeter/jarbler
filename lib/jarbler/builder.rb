@@ -18,7 +18,7 @@ module Jarbler
       # TODO: transform to internal bundler API call (check if jruby is installed + install if not)
       exec_command  "gem install --no-doc jruby-jars -v #{config.jruby_version}" # Ensure that jruby-jars are installed in the requested version
       ruby_version = copy_jruby_jars_sto_staging(staging_dir) # Copy the jruby jars to the staging directory
-      exec_command "javac -source 1.8 -target 1.8 -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
+      exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
@@ -48,7 +48,13 @@ module Jarbler
 
         # Write java properties file for use in JarMain.java
         File.open('jarbler.properties', 'w') do |file|
-          file.write("jarbler.port=#{config.port}\n")
+          file.write("jarbler.executable=#{config.executable}\n")
+          # write a list of strings into property file delimited by space
+          java_executable_params = ''
+          config.executable_params.each do |param|
+            java_executable_params += "#{param} "
+          end
+          file.write("jarbler.executable_params=#{java_executable_params.strip}\n")
         end
 
         # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
@@ -66,7 +72,7 @@ module Jarbler
 
         # place the jar in project directory
         file_utils_copy(config.jar_name, app_root)
-
+        puts "Created jar file #{app_root}/#{config.jar_name}"
       end
 
       # remove temporary directory staging_dir
