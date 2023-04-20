@@ -43,16 +43,21 @@ Additional command line parameters are passed through to the executed Ruby app (
 ## Configuration
 
 The file config/jarble.rb contains the configuration for Jarbler. 
-To create a template config file with information about the supported configuration options, execute
+To create a template config file with information about the supported configuration options, execute:
 
     $ jarble config
+
+The default configuration supports Ruby on Rails applications.<br>
+The executable is set to "bin/rails" by default.<br>
+The default executable parameters are  "server -p 8080 -e production".
 
 ## Troubleshooting
 * Set DEBUG=true in environment to get additional runtime information
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/rammpeter/jarbler.
+Bug reports and pull requests are welcome on GitHub at https://github.com/rammpeter/jarbler. <br>
+Any feedback about usage experience or missing features is also appreciated.
 
 ## License
 

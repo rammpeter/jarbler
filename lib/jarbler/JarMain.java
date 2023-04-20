@@ -108,12 +108,18 @@ class JarMain {
             Object instance = (Object) constructor.newInstance();
             //Object instance = clazz.newInstance();
 
-            // Call the method
+            // Prepare the argument list
             ArrayList<String> mainArgs = new ArrayList<String>();
             mainArgs.add(executable);
             if (executable_params != null) {
                 for (String param : executable_params.split(" ")) {
                     mainArgs.add(param);
+                }
+            }
+            // add possible command line arguments
+            if (args.length > 0) {
+                for (String arg : args) {
+                    mainArgs.add(arg);
                 }
             }
 
@@ -123,6 +129,7 @@ class JarMain {
             }
 
             System.setProperty("user.dir", newFolder.getAbsolutePath()+File.separator+"app_root");
+            // call the method org.jruby.Main.main
             mainMethod.invoke(null, (Object)mainArgs.toArray(new String[mainArgs.size()]));
         } catch (Exception e) {
             e.getCause().printStackTrace();
