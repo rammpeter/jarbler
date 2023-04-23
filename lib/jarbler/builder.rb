@@ -17,7 +17,8 @@ module Jarbler
 
       # TODO: transform to internal bundler API call (check if jruby is installed + install if not)
       exec_command  "gem install --no-doc jruby-jars -v #{config.jruby_version}" # Ensure that jruby-jars are installed in the requested version
-      ruby_version = copy_jruby_jars_sto_staging(staging_dir) # Copy the jruby jars to the staging directory
+      gem_search_locations = collect_gem_search_locations(app_root)
+      ruby_version = copy_jruby_jars_to_staging(staging_dir, gem_search_locations) # Copy the jruby jars to the staging directory
       exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
@@ -34,7 +35,6 @@ module Jarbler
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
 
       needed_gems = gem_dependencies  # get the full names of the dependencies
-      gem_search_locations = collect_gem_search_locations(app_root)
       needed_gems.each do |gem_full_name|
         copy_gem_to_staging(gem_full_name, gem_target_location, gem_search_locations)
       end
@@ -208,18 +208,18 @@ module Jarbler
 
     # Copy the jruby-jars to the staging directory
     # @param [String] staging_dir Path to the staging directory
+    # @param [Array] gem_search_locations Array of Gem locations to look for jRuby jars
     # @return [String] the ruby version of the jRuby jars
-    def copy_jruby_jars_sto_staging(staging_dir)
-      lines = exec_command "gem info jruby-jars -v #{config.jruby_version}"
+    def copy_jruby_jars_to_staging(staging_dir, gem_search_locations)
       jruby_jars_location = nil
-      lines.split("\n").each do |line|
-        if line.match(config.jruby_version) && line.match(/Installed at/)
-          jruby_jars_location = "#{line.split(':')[1].strip}/gems/jruby-jars-#{config.jruby_version}"
-          debug "Location of jRuby jars: #{jruby_jars_location}"
+      gem_search_locations.each do |gem_search_location|
+        gem_dir = "#{gem_search_location}/gems/jruby-jars-#{config.jruby_version}"
+        if File.exist?(gem_dir)
+          jruby_jars_location = gem_dir
           break
         end
       end
-      raise "Could not determine location of jRuby jars in following output:\n#{lines}" unless jruby_jars_location
+      raise "Could not determine location of jRuby jars for release '#{config.jruby_version}' in the following output:\n#{lines}" unless jruby_jars_location
       file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
       file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
 

@@ -6,7 +6,7 @@ module Jarbler
     # create instence of Config class with defaults or from config file
     # Should be called from rails/ruby root directory
     def self.create
-      if File.exists?(CONFIG_FILE)
+      if File.exist?(CONFIG_FILE)
         config = eval(File.read(CONFIG_FILE), binding, CONFIG_FILE, 0)
       else
         config = Jarbler::Config.new
