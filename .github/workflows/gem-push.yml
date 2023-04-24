@@ -59,6 +59,14 @@ jobs:
         chmod 0600 $HOME/.gem/credentials
         printf -- "---\n:rubygems_api_key: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
         gem build *.gemspec
-        gem push *.gem
+        RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
+        echo "Checking rubygems.org for RELEASE=$RELEASE"
+        gem search jarbler -v 0.1.1 | grep jarbler
+        if [ $? -eq 0 ]]; then
+          echo "RELEASE=$RELEASE already exists on rubygems.org"
+        else
+          echo "RELEASE=$RELEASE does not exist on rubygems.org"
+          gem push *.gem
+        fi
       env:
         GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
