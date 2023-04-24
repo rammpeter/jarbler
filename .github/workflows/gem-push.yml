@@ -65,13 +65,13 @@ jobs:
         gem build *.gemspec
         RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
         echo "Checking rubygems.org for RELEASE=$RELEASE"
-        ( gem search jarbler | grep jarbler | grep $RELEASE
-          if [[ $? -eq 0 ]]; then
-            echo "RELEASE=$RELEASE already exists on rubygems.org, no push executed"
-          else
-            echo "RELEASE=$RELEASE does not exist on rubygems.org"
-            gem push *.gem
-          fi
-        )
+        set +e
+        gem search jarbler | grep jarbler | grep $RELEASE
+        if [[ $? -eq 0 ]]; then
+          echo "RELEASE=$RELEASE already exists on rubygems.org, no push executed"
+        else
+          echo "RELEASE=$RELEASE does not exist on rubygems.org"
+          gem push *.gem
+        fi
       env:
         GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
