@@ -221,7 +221,7 @@ module Jarbler
           break
         end
       end
-      raise "Could not determine location of jRuby jars for release '#{config.jruby_version}' in the following output:\n#{lines}" unless jruby_jars_location
+      raise "Could not determine location of jRuby jars for release '#{config.jruby_version}' in the following locations:\n#{gem_search_locations}" unless jruby_jars_location
       file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
       file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
 
