@@ -93,7 +93,7 @@ module Jarbler
       gem_search_locations = []
       # Check where inside this location the gems may be installed
       possible_gem_search_locations.each do |gem_search_location|
-        if File.exist?(gem_search_location}) && File.directory?(gem_search_location)
+        if File.exist?(gem_search_location) && File.directory?(gem_search_location)
           valid_gem_search_location = nil # No valid path found yet
           Find.find(gem_search_location) do |path|
             if File.directory?(path) && File.exist?("#{path}/specifications") && File.exist?("#{path}/gems")
