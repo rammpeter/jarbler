@@ -86,15 +86,9 @@ module Jarbler
     # @param [String] app_root Application root directory
     # @return [Array] Array of Gem locations
     def collect_gem_search_locations(app_root)
-      # Search locations of gems in Gemfile.lock
-      possible_gem_search_locations = []
-      # Add possible local config first in search list
-      possible_gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
-      if ENV['GEM_PATH']
-        ENV['GEM_PATH'].split(':').each do |gem_path|
-          possible_gem_search_locations << gem_path
-        end
-      end
+      # All active search locations for Gems
+      Bundler.setup
+      possible_gem_search_locations = Gem.paths.path
       debug "Possible Gem locations: #{possible_gem_search_locations}"
       gem_search_locations = []
       # Check where inside this location the gems may be installed
@@ -193,19 +187,6 @@ module Jarbler
        debug ""
       end
       @config
-    end
-
-    # Check if there is an additional local bundle path in .bundle/config
-    def bundle_config_bundle_path(rails_root)
-      bundle_path = nil # default
-      if File.exist?("#{rails_root}/.bundle/config")
-        bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
-        if bundle_config && bundle_config['BUNDLE_PATH']
-          bundle_path = "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
-          debug "Local Gem path configured in #{rails_root}/.bundle/config: #{bundle_path}"
-        end
-      end
-      bundle_path
     end
 
     # Copy the jruby-jars to the staging directory
