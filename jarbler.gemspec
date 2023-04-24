@@ -8,13 +8,11 @@ Gem::Specification.new do |spec|
   spec.authors = ["Peter Ramm"]
   spec.email = ["Peter@ramm-oberhermsdorf.de"]
 
-  spec.summary = "Create jar file from Rails app"
-  spec.description = "Pack a Rails application into an executable jar file"
+  spec.summary = "Pack a Ruby app into a Java jar file"
+  spec.description = "Pack Ruby combined with jRuby runtime into a jar file to simply run the app on any Java platform by '> java -jar file.jar'"
   spec.homepage = "https://github.com/rammpeter/jarbler"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
-
-  spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/rammpeter/jarbler"

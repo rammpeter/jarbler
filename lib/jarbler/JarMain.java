@@ -23,7 +23,10 @@ import java.lang.ClassNotFoundException;
 import java.lang.NoSuchMethodException;
 import java.lang.IllegalAccessException;
 import java.lang.InstantiationException;
-
+import java.util.Map;
+import java.util.HashMap;
+import java.lang.reflect.Field;
+import java.io.FileWriter;
 
 class JarMain {
 
@@ -55,6 +58,7 @@ class JarMain {
             System.out.println("Extracting files from "+jarPath+" to "+ newFolder.getAbsolutePath());
             unzip(jarPath, newFolder.getAbsolutePath());
 
+            String app_root = newFolder.getAbsolutePath()+File.separator+"app_root";
 
             // get the file name of the jruby jar file in newFolder
             File[] files = newFolder.listFiles();
@@ -86,15 +90,15 @@ class JarMain {
                 throw new RuntimeException("Property 'executable' definition missing in jarbler.properties");
             }
 
-            System.setProperty("GEM_PATH", newFolder.getAbsolutePath()+File.separator+"gems");      // not really necessray for Rails
-            System.setProperty("GEM_HOME", newFolder.getAbsolutePath()+File.separator+"gems");      // not really necessray for Rails
-            System.setProperty("BUNDLE_PATH", newFolder.getAbsolutePath()+File.separator+"gems");   // this drives bundler for rails app
-            System.setProperty("BUNDLE_WITHOUT", "test:development");  // exclude test and development dependencies from Gemfile check
+            // create the bundle config file with the path of the gems
+            create_bundle_config(app_root, newFolder.getAbsolutePath()+File.separator+"gems");
 
             // Load the Jar file
             URLClassLoader classLoader = new URLClassLoader(new URL[]{
-                new URL("file://" + jrubyCoreFile.getAbsolutePath()),
-                new URL("file://" + jrubyStdlibFile.getAbsolutePath())
+                jrubyCoreFile.toURI().toURL(),
+                jrubyStdlibFile.toURI().toURL()
+                //new URL("file:/" + jrubyCoreFile.getAbsolutePath()),
+                //new URL("file:/" + jrubyStdlibFile.getAbsolutePath())
             });
 
             // Load the class
@@ -128,15 +132,18 @@ class JarMain {
                 debug(" - " + arg);
             }
 
-            System.setProperty("user.dir", newFolder.getAbsolutePath()+File.separator+"app_root");
+            System.setProperty("user.dir", app_root);
             // call the method org.jruby.Main.main
             mainMethod.invoke(null, (Object)mainArgs.toArray(new String[mainArgs.size()]));
         } catch (Exception e) {
-            e.getCause().printStackTrace();
+            e.printStackTrace();
         } finally {
-            // remove the temp directory newFolder
-            debug("jRuby program terminated, removing temporary folder "+ newFolder.getAbsolutePath());
-            deleteFolder(newFolder);
+            // remove the temp directory newFolder if not DEBUG mode
+            if (System.getenv("DEBUG") != null) {
+                System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
+            } else {
+                deleteFolder(newFolder);
+            }
         }
     }
 
@@ -206,4 +213,16 @@ class JarMain {
       file.delete();
     }
 
+
+    private static void create_bundle_config(String app_root, String gem_path) throws IOException {
+        File bundle_config = new File(app_root + File.separator + ".bundle");
+        bundle_config.mkdir();
+        File bundle_config_file = new File(bundle_config.getAbsolutePath() + File.separator + "config");
+        bundle_config_file.createNewFile();
+        FileWriter fw = new FileWriter(bundle_config_file);
+        fw.write("---\n");
+        fw.write("BUNDLE_PATH: " + gem_path + "\n");
+        fw.write("BUNDLE_WITHOUT: test:development\n");
+        fw.close();
+    }
 }

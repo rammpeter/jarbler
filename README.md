@@ -53,6 +53,7 @@ The default executable parameters are  "server -p 8080 -e production".
 
 ## Troubleshooting
 * Set DEBUG=true in environment to get additional runtime information
+* The temporary folder with the extracted app and jRuby runtime files is not deleted after execution if DEBUG is set.
 
 ## Contributing
 
