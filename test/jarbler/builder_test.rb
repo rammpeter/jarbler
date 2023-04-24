@@ -13,6 +13,8 @@ class BuilderTest < Minitest::Test
     in_temp_dir do
       prepare_gemfiles
       Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
+      # TODO: remove
+      puts `env`
       @builder.build_jar
       config = Jarbler::Config.create
       assert_jar_file("#{Dir.pwd}/#{config.jar_name}", config)
