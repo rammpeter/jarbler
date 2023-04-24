@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  schedule:
+    # * is a special character in YAML so you have to quote this string, runs on Sunday morning
+    - cron: '0 0 * * 0'
+
 
 jobs:
   test:
@@ -62,7 +66,7 @@ jobs:
         RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
         echo "Checking rubygems.org for RELEASE=$RELEASE"
         gem search jarbler -v 0.1.1 | grep jarbler
-        if [ $? -eq 0 ]]; then
+        if [[ $? -eq 0 ]]; then
           echo "RELEASE=$RELEASE already exists on rubygems.org"
         else
           echo "RELEASE=$RELEASE does not exist on rubygems.org"
