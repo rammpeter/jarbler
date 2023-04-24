@@ -30,7 +30,7 @@ jobs:
   build:
     name: Build + Publish
     runs-on: ubuntu-latest
-    depends-on: test
+    needs: test
     permissions:
       contents: read
       packages: write
