@@ -20,6 +20,8 @@ jobs:
       uses: actions/setup-ruby@v1
 
     - name: Run tests
+      env:
+        DEBUG: true
       run: |
         gem install bundler
         bundle install

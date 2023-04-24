@@ -90,8 +90,10 @@ module Jarbler
       possible_gem_search_locations = []
       # Add possible local config first in search list
       possible_gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
-      ENV['GEM_PATH'].split(':').each do |gem_path|
-        possible_gem_search_locations << gem_path
+      if ENV['GEM_PATH']
+        ENV['GEM_PATH'].split(':').each do |gem_path|
+          possible_gem_search_locations << gem_path
+        end
       end
       debug "Possible Gem locations: #{possible_gem_search_locations}"
       gem_search_locations = []
