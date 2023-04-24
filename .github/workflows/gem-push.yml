@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    # * is a special character in YAML so you have to quote this string, runs on Sunday morning
-    - cron: '0 0 * * 0'
+    # * is a special character in YAML so you have to quote this string, runs on each day of the week at 00:00 UTC
+    - cron: '0 0 * * *'
 
 
 jobs:
@@ -67,7 +67,7 @@ jobs:
         echo "Checking rubygems.org for RELEASE=$RELEASE"
         gem search jarbler -v 0.1.1 | grep jarbler
         if [[ $? -eq 0 ]]; then
-          echo "RELEASE=$RELEASE already exists on rubygems.org"
+          echo "RELEASE=$RELEASE already exists on rubygems.org, no push executed"
         else
           echo "RELEASE=$RELEASE does not exist on rubygems.org"
           gem push *.gem
