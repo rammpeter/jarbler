@@ -34,7 +34,8 @@ jobs:
       run: |
         gem install bundler
         bundle install
-        DEBUG=true bundle exec rake test
+        cat Gemfile.lock
+        bundle exec rake test
 
   build:
     name: Build + Publish
