@@ -31,10 +31,11 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - name: Run tests
+      env:
+        DEBUG: true
       run: |
         gem install bundler
         bundle install
-        cat Gemfile.lock
         bundle exec rake test
 
   build:
