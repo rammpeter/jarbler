@@ -1,4 +1,8 @@
-# Steps for creating gem
+# Steps for creating gem in local environment
+
+# remove existing gem file
+rm -f jarbler-*.gem
+
 rake test
 if [ $? -ne 0 ]; then
   echo "Tests failed."
@@ -11,7 +15,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-gem install jarbler-0.1.0.gem
+gem install `ls jarbler-*.gem`
 if [ $? -ne 0 ]; then
   echo "Gem install failed."
   exit 1

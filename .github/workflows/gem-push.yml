@@ -13,20 +13,26 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
+        ruby: ['2.7', '3.0', '3.1', head, jruby, jruby-head, truffleruby, truffleruby-head]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
       packages: write
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Ruby 2.6
-      uses: actions/setup-ruby@v1
-
-    - name: Run tests
-      env:
+    - uses: actions/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+    - env:
         DEBUG: true
-      run: |
+    - run: |
         gem install bundler
         bundle install
         bundle exec rake test
@@ -62,7 +68,7 @@ jobs:
         touch $HOME/.gem/credentials
         chmod 0600 $HOME/.gem/credentials
         printf -- "---\n:rubygems_api_key: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
-        gem build *.gemspec
+        gem build jarbler.gemspec
         RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
         echo "Checking rubygems.org for RELEASE=$RELEASE"
         set +e
