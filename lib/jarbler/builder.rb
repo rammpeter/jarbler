@@ -35,11 +35,8 @@ module Jarbler
       FileUtils.mkdir_p("#{gem_target_location}/gems")
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
 
-      gem_search_locations = collect_gem_search_locations(app_root)
-      needed_gems = gem_dependencies  # get the full names of the dependencies
-      needed_gems.each do |gem_full_name|
-        copy_gem_to_staging(gem_full_name, gem_target_location, gem_search_locations)
-      end
+      # Copy the needed Gems to the staging directory
+      copy_needed_gems_to_staging(gem_target_location, app_root)
 
       Dir.chdir(staging_dir) do
         # create the manifest file
@@ -134,6 +131,26 @@ module Jarbler
       bundle_path
     end
 
+    # Copy the needed Gems to the staging directory
+    # @param [String] gem_target_location Path to the staging directory
+    # @return [void]
+    def copy_needed_gems_to_staging(gem_target_location, app_root)
+      Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
+        Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
+        gem_search_locations = collect_gem_search_locations(app_root)
+        needed_gems = gem_dependencies  # get the full names of the dependencies
+        needed_gems.each do |needed_gem|
+          # Get the location of the needed gem
+          spec = Gem::Specification.find_by_name(needed_gem[:name], needed_gem[:version])
+          raise "Gem #{needed_gem[:full_name]} not found for copying" unless spec
+          debug "Found gem #{needed_gem[:full_name]} version #{needed_gem[:version]} in #{spec.gem_dir}"
+          file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
+          file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
+          # copy_gem_to_staging(needed_gem[:full_name], gem_target_location, gem_search_locations)
+        end
+      end
+    end
+
     # Copy the Gem elements to the staging directory
     # @param [String] gem_full_name Full name of the Gem including version and platform
     # @param [String] staging_dir Path to the staging directory
@@ -171,14 +188,16 @@ module Jarbler
         # find lockfile record for Gemfile spec
         lockfile_spec = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == gemfile_spec.name }
         if lockfile_spec
-          needed_gems << lockfile_spec.full_name unless needed_gems.include?(lockfile_spec.full_name)
+          unless needed_gems.map{|n| n[:fullname]}.include?(lockfile_spec.full_name)
+            needed_gems << { full_name: lockfile_spec.full_name, name: lockfile_spec.name, version: lockfile_spec.version }
+          end
           debug "Direct Gem dependency: #{lockfile_spec.full_name}"
           add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
           debug "Gem #{gemfile_spec.name} not found in Gemfile.lock"
         end
       end
-      needed_gems.uniq.sort
+      needed_gems.uniq.sort{|a,b| a[:full_name] <=> b[:full_name]}
     end
 
     # recurively find all indirect dependencies
@@ -191,8 +210,8 @@ module Jarbler
         lockfile_spec_found = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == lockfile_spec_dep.name }
         if lockfile_spec_found
           debug "Indirect Gem dependency from #{lockfile_spec.full_name}: #{lockfile_spec_found.full_name}"
-          unless needed_gems.include?(lockfile_spec_found.full_name)
-            needed_gems << lockfile_spec_found.full_name
+          unless needed_gems.map{|n| n[:fullname]}.include?(lockfile_spec_found.full_name)
+            needed_gems << { full_name: lockfile_spec_found.full_name, name: lockfile_spec_found.name, version: lockfile_spec_found.version }
             add_indirect_dependencies(lockfile_specs, lockfile_spec_found, needed_gems)
           end
         else

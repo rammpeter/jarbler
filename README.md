@@ -55,6 +55,12 @@ The default executable parameters are  "server -p 8080 -e production".
 * Set DEBUG=true in environment to get additional runtime information
 * The temporary folder with the extracted app and jRuby runtime files is not deleted after execution if DEBUG is set.
 
+### Possible error messages
+* Gem::LoadError: You have already activated ..., but your Gemfile requires ... . Since ... is a default gem, you can either remove your dependency on it or try updating to a newer version of bundler that supports net-protocol as a default gem.
+  * Reason: Mismatch between the version of the local requested gem and the version of the default gem
+  * Solution: Update the default gems to the requested version
+
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/rammpeter/jarbler. <br>
