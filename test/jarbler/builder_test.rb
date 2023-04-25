@@ -8,7 +8,12 @@ require 'jarbler/config'
 
 class BuilderTest < Minitest::Test
   def setup
+    debug "##### Starting test #{self.class.name}::#{self.name}"
     @builder = Jarbler::Builder.new
+  end
+
+  def teardown
+    debug "##### End test #{self.class.name}::#{self.name}"
   end
 
   def test_exclude_dirs_removed
