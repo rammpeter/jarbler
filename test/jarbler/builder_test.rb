@@ -72,6 +72,7 @@ class BuilderTest < Minitest::Test
       debug "############# definition ended, before install #############"
       puts `gem list -d minitest`
       debug "############# gem list  ended , install now in #{Dir.pwd} #############"
+      debug "Gem path: #{Gem.paths.path}"
       Bundler::Installer.install(Dir.pwd, definition) # Install missing Gems from Gemfile
       Bundler.setup
       puts `gem list -d minitest`
