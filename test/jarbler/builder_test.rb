@@ -10,6 +10,7 @@ class BuilderTest < Minitest::Test
   def setup
     debug "##### Starting test #{self.class.name}::#{self.name}"
     debug ">>>> Gem.paths.path in setup: #{Gem.paths.path}"
+    debug ">>>> GEM_PATH in setup: #{ENV['GEM_PATH']}"
     @builder = Jarbler::Builder.new
   end
 
