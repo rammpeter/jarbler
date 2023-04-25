@@ -63,7 +63,7 @@ class BuilderTest < Minitest::Test
         file.write(Bundler::LockfileGenerator.generate(definition))
       end
       debug "############# definition follows #############"
-      debug definition.inspect
+      debug "#{definition.inspect}"
       debug "############# definition ended, before install #############"
       puts `gem list -d minitest`
       debug "############# gem list  ended #############"
