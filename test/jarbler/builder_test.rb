@@ -63,11 +63,13 @@ class BuilderTest < Minitest::Test
         file.write(Bundler::LockfileGenerator.generate(definition))
       end
       debug "############# definition follows #############"
-      debug definition.to_s
-      debug "############# definition ended #############"
-      puts `gem list -d`
+      debug definition.inspect
+      debug "############# definition ended, before install #############"
+      puts `gem list -d minitest`
       debug "############# gem list  ended #############"
       Bundler::Installer.install(Dir.pwd, definition) # Install missing Gems from Gemfile
+      puts `gem list -d minitest`
+      debug "############# gem list  ended after install #############"
     end
   end
 
