@@ -118,7 +118,7 @@ module Jarbler
         end
       end
       debug "Valid Gem locations: #{gem_search_locations}"
-      gem_search_locations
+      gem_search_locations.uniq
     end
 
     # Check if there is an additional local bundle path in .bundle/config
@@ -148,6 +148,7 @@ module Jarbler
           return
         end
       end
+      puts `gem -d list`
       raise "Gem #{gem_full_name} not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
