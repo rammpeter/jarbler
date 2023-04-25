@@ -148,7 +148,9 @@ module Jarbler
           return
         end
       end
+      puts "######################## gem list following:"
       puts `gem -d list`
+      puts "######################## gem list ended:"
       raise "Gem #{gem_full_name} not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
