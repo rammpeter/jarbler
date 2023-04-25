@@ -1,3 +1,5 @@
+require 'rubygems'
+require 'rubygems/dependency_installer'
 require 'bundler'
 require 'find'
 require 'fileutils'
@@ -8,18 +10,16 @@ module Jarbler
     # Should be executed in application directory of Rails/Ruby application
     # @return [void]
     def build_jar
+      debug "Running with Ruby version '#{RUBY_VERSION}' on platform '#{RUBY_PLATFORM}'. Engine '#{RUBY_ENGINE}' version '#{RUBY_ENGINE_VERSION}'"
+
       # create a temporary directory for staging
       staging_dir = Dir.mktmpdir
 
-      jarbler_lib_dir = __dir__
       app_root = Dir.pwd
       debug "Project dir: #{app_root}"
 
-      # TODO: transform to internal bundler API call (check if jruby is installed + install if not)
-      exec_command  "gem install --no-doc jruby-jars -v #{config.jruby_version}" # Ensure that jruby-jars are installed in the requested version
-      gem_search_locations = collect_gem_search_locations(app_root)
-      ruby_version = copy_jruby_jars_to_staging(staging_dir, gem_search_locations) # Copy the jruby jars to the staging directory
-      exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{jarbler_lib_dir}/JarMain.java" # Compile the Java files
+      ruby_version = copy_jruby_jars_to_staging(staging_dir) # Copy the jruby jars to the staging directory
+      exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{app_root}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
@@ -34,6 +34,7 @@ module Jarbler
       FileUtils.mkdir_p("#{gem_target_location}/gems")
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
 
+      gem_search_locations = collect_gem_search_locations(app_root)
       needed_gems = gem_dependencies  # get the full names of the dependencies
       needed_gems.each do |gem_full_name|
         copy_gem_to_staging(gem_full_name, gem_target_location, gem_search_locations)
@@ -197,16 +198,16 @@ module Jarbler
     # @param [String] staging_dir Path to the staging directory
     # @param [Array] gem_search_locations Array of Gem locations to look for jRuby jars
     # @return [String] the ruby version of the jRuby jars
-    def copy_jruby_jars_to_staging(staging_dir, gem_search_locations)
-      jruby_jars_location = nil
-      gem_search_locations.each do |gem_search_location|
-        gem_dir = "#{gem_search_location}/gems/jruby-jars-#{config.jruby_version}"
-        if File.exist?(gem_dir)
-          jruby_jars_location = gem_dir
-          break
-        end
-      end
-      raise "Could not determine location of jRuby jars for release '#{config.jruby_version}' in the following locations:\n#{gem_search_locations}" unless jruby_jars_location
+    def copy_jruby_jars_to_staging(staging_dir)
+
+      # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
+      installer = Gem::DependencyInstaller.new
+      installer.install('jruby-jars', config.jruby_version)
+
+      # Get the location of the jruby-jars gem
+      spec = Gem::Specification.find_by_name('jruby-jars', config.jruby_version)
+      jruby_jars_location = spec.gem_dir
+
       file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
       file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
 

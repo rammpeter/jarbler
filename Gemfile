@@ -12,5 +12,6 @@ group(:test)  do
   gem 'minitest'
   gem 'minitest-reporters'
   # needed for minitests
-  gem 'jruby-jars'
+  # test should install the jruby-jars in right version itself
+  # gem 'jruby-jars'
 end
