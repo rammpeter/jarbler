@@ -91,7 +91,9 @@ module Jarbler
       # All active search locations for Gems
       Bundler.setup
       possible_gem_search_locations = Gem.paths.path
+      # Add the location from the bundle config, if it is set, necessary for Ruby 2.7
       possible_gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
+      possible_gem_search_locations << Gem.default_dir
 
       debug "Possible Gem locations: #{possible_gem_search_locations}"
       gem_search_locations = []
