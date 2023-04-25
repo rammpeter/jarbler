@@ -10,8 +10,6 @@ class BuilderTest < Minitest::Test
   def setup
     debug "##### Starting test #{self.class.name}::#{self.name}"
     debug ">>>> Gem.paths.path in setup: #{Gem.paths.path}"
-
-    Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
     @builder = Jarbler::Builder.new
   end
 
@@ -28,11 +26,12 @@ class BuilderTest < Minitest::Test
         file.write("hugo")
       end
       Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
-      prepare_gemfiles
-      debug ">>>> Gem.paths.path in test_exclude_dirs_removed - before builder: #{Gem.paths.path}"
-      @builder.build_jar
-      debug ">>>> Gem.paths.path in test_exclude_dirs_removed - after builder: #{Gem.paths.path}"
-      assert_jar_file(Dir.pwd)
+      with_prepared_gemfile do
+        debug ">>>> Gem.paths.path in test_exclude_dirs_removed - before builder: #{Gem.paths.path}"
+        @builder.build_jar
+        debug ">>>> Gem.paths.path in test_exclude_dirs_removed - after builder: #{Gem.paths.path}"
+        assert_jar_file(Dir.pwd)
+      end
     end
   end
 
@@ -43,24 +42,19 @@ class BuilderTest < Minitest::Test
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
-      prepare_gemfiles('minitest')
-      # ensure that builder is run in new Bundler environment which recognizes the local bundle path
-      Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
-        Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
+      with_prepared_gemfile('minitest') do
         debug ">>>> Gem.paths.path in test_local_bundle_path_configured - before builder: #{Gem.paths.path}"
         @builder.build_jar
         debug ">>>> Gem.paths.path in test_local_bundle_path_configured - after builder: #{Gem.paths.path}"
+        assert_jar_file(Dir.pwd)
       end
-
-
-      assert_jar_file(Dir.pwd)
       # TODO: Check if additional Gem is in jar file
     end
   end
 
   private
   # Prepare Gemfiles in temporary test dir and install gems
-  def prepare_gemfiles(additional_gems = [])
+  def with_prepared_gemfile(additional_gems = [])
     additional_gems = [additional_gems] unless additional_gems.is_a?(Array) # Convert to array if not already
     File.open('Gemfile', 'w') do |file|
       file.write("source 'https://rubygems.org'\n")
@@ -79,6 +73,7 @@ class BuilderTest < Minitest::Test
       end
       Bundler::Installer.install(Dir.pwd, definition) # Install missing Gems from Gemfile
       Bundler.setup
+      yield if block_given?
     end
   end
 

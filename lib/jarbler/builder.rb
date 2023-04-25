@@ -81,42 +81,6 @@ module Jarbler
 
     private
 
-    # Find the locations where Gems are installed
-    # @param [String] app_root Application root directory
-    # @return [Array] Array of Gem locations
-    def collect_gem_search_locations(app_root)
-      # All active search locations for Gems
-      Bundler.setup
-      possible_gem_search_locations = Gem.paths.path
-      # Add the location from the bundle config, if it is set, necessary for Ruby 2.7
-      possible_gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
-      possible_gem_search_locations << Gem.default_dir
-
-      debug "Possible Gem locations: #{possible_gem_search_locations}"
-      gem_search_locations = []
-      # Check where inside this location the gems may be installed
-      possible_gem_search_locations.uniq.each do |gem_search_location|
-        if File.exist?(gem_search_location) && File.directory?(gem_search_location)
-          debug "Checking Gem location #{gem_search_location}"
-          valid_gem_search_location = nil # No valid path found yet
-          Find.find(gem_search_location) do |path|
-            if File.directory?(path) && File.exist?("#{path}/specifications") && File.exist?("#{path}/gems")
-              valid_gem_search_location = path # Found a valid path
-            end
-          end
-          if valid_gem_search_location
-            debug "Found valid Gem location in #{gem_search_location}"
-            gem_search_locations << valid_gem_search_location
-          else
-            debug "No valid gem location found in #{gem_search_location}"
-          end
-        else
-          debug("Gem location #{gem_search_location} does not exist or is not a directory")
-        end
-      end
-      debug "Valid Gem locations: #{gem_search_locations}"
-      gem_search_locations.uniq
-    end
 
     # Check if there is an additional local bundle path in .bundle/config
     def bundle_config_bundle_path(rails_root)
@@ -135,9 +99,8 @@ module Jarbler
     # @param [String] gem_target_location Path to the staging directory
     # @return [void]
     def copy_needed_gems_to_staging(gem_target_location, app_root)
-      Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
-        Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
-        gem_search_locations = collect_gem_search_locations(app_root)
+      #Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
+      #  Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
         needed_gems = gem_dependencies  # get the full names of the dependencies
         needed_gems.each do |needed_gem|
           # Get the location of the needed gem
@@ -146,26 +109,8 @@ module Jarbler
           debug "Found gem #{needed_gem[:full_name]} version #{needed_gem[:version]} in #{spec.gem_dir}"
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
           file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
-          # copy_gem_to_staging(needed_gem[:full_name], gem_target_location, gem_search_locations)
-        end
+          # end
       end
-    end
-
-    # Copy the Gem elements to the staging directory
-    # @param [String] gem_full_name Full name of the Gem including version and platform
-    # @param [String] staging_dir Path to the staging directory
-    # @param [Array] gem_search_locations Array of Gem locations
-    # @return [void]
-    def copy_gem_to_staging(gem_full_name, gem_target_location, gem_search_locations)
-      gem_search_locations.each do |gem_search_location|
-        gem_dir = "#{gem_search_location}/gems/#{gem_full_name}"
-        if File.exist?(gem_dir)
-          file_utils_copy(gem_dir, "#{gem_target_location}/gems")
-          file_utils_copy("#{gem_search_location}/specifications/#{gem_full_name}.gemspec", "#{gem_target_location}/specifications")
-          return
-        end
-      end
-      raise "Gem #{gem_full_name} not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
     # Read the default/production dependencies from Gemfile.lock and Gemfile
