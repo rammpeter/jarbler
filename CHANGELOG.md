@@ -12,3 +12,6 @@
 
 - extract valid Gem paths from Bundler instead of using the environment variable GEM_PATH 
 
+## [0.1.3] - 2023-04-25
+
+- Removed .jruby-version so that the jruby version is not fixed anymore

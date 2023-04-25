@@ -129,7 +129,7 @@ module Jarbler
           return
         end
       end
-      raise "Gem #{gem_name} (#{gem_version}) not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
+      raise "Gem #{gem_full_name} not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
     # Read the default/production dependencies from Gemfile.lock and Gemfile
