@@ -249,7 +249,7 @@ module Jarbler
       unless Gem.paths.path.include?(current_jruby_jars_gem_path)
         Gem.paths.path << current_jruby_jars_gem_path
         debug "Added #{current_jruby_jars_gem_path} to Gem.paths.path"
-        debug "Gem.paths.path is now: #{Gem.paths.path}
+        debug "Gem.paths.path is now: #{Gem.paths.path}"
       end
 
       puts "######################## gem list following:"
