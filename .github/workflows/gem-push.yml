@@ -31,7 +31,7 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - name: Run tests
-    - run: |
+      run: |
         gem install bundler
         bundle install
         DEBUG=true bundle exec rake test
