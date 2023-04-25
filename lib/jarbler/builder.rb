@@ -3,6 +3,7 @@ require 'rubygems/dependency_installer'
 require 'bundler'
 require 'find'
 require 'fileutils'
+require 'yaml'
 
 module Jarbler
   class Builder
@@ -90,10 +91,12 @@ module Jarbler
       # All active search locations for Gems
       Bundler.setup
       possible_gem_search_locations = Gem.paths.path
+      possible_gem_search_locations << bundle_config_bundle_path(app_root) if bundle_config_bundle_path(app_root)
+
       debug "Possible Gem locations: #{possible_gem_search_locations}"
       gem_search_locations = []
       # Check where inside this location the gems may be installed
-      possible_gem_search_locations.each do |gem_search_location|
+      possible_gem_search_locations.uniq.each do |gem_search_location|
         if File.exist?(gem_search_location) && File.directory?(gem_search_location)
           valid_gem_search_location = nil # No valid path found yet
           Find.find(gem_search_location) do |path|
@@ -113,6 +116,19 @@ module Jarbler
       end
       debug "Valid Gem locations: #{gem_search_locations}"
       gem_search_locations
+    end
+
+    # Check if there is an additional local bundle path in .bundle/config
+    def bundle_config_bundle_path(rails_root)
+      bundle_path = nil # default
+      if File.exist?("#{rails_root}/.bundle/config")
+        bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
+        if bundle_config && bundle_config['BUNDLE_PATH']
+          bundle_path = "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
+          debug "Local Gem path configured in #{rails_root}/.bundle/config: #{bundle_path}"
+        end
+      end
+      bundle_path
     end
 
     # Copy the Gem elements to the staging directory
