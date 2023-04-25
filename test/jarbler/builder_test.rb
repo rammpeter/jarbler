@@ -34,7 +34,7 @@ class BuilderTest < Minitest::Test
   def prepare_gemfiles
     File.open('Gemfile', 'w') do |file|
       file.write("source 'https://rubygems.org'\n")
-      file.write("gem 'rake'\n")
+      # file.write("gem 'rake'\n")
     end
     Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
       Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
