@@ -9,6 +9,7 @@ require 'jarbler/config'
 class BuilderTest < Minitest::Test
   def setup
     debug "##### Starting test #{self.class.name}::#{self.name}"
+    Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
     @builder = Jarbler::Builder.new
   end
 
