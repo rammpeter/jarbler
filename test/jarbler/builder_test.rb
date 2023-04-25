@@ -62,6 +62,11 @@ class BuilderTest < Minitest::Test
       File.open('Gemfile.lock', 'w') do |file|
         file.write(Bundler::LockfileGenerator.generate(definition))
       end
+      debug "############# definition follows #############"
+      debug definition.to_s
+      debug "############# definition ended #############"
+      puts `gem list -d`
+      debug "############# gem list  ended #############"
       Bundler::Installer.install(Dir.pwd, definition) # Install missing Gems from Gemfile
     end
   end
