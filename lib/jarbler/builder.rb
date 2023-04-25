@@ -243,6 +243,15 @@ module Jarbler
       installed = installer.install('jruby-jars', config.jruby_version)
       puts "Installed jruby-jars gem: #{installed.inspect}"
       puts "Installed at: #{installed[0]&.full_gem_path}"
+
+      # add the current path of jruby-jars to the gem search path if not already there
+      current_jruby_jars_gem_path = File.expand_path("../..", installed[0]&.full_gem_path)
+      unless Gem.paths.path.include?(current_jruby_jars_gem_path)
+        Gem.paths.path << current_jruby_jars_gem_path
+        debug "Added #{current_jruby_jars_gem_path} to Gem.paths.path"
+        debug "Gem.paths.path is now: #{Gem.paths.path}
+      end
+
       puts "######################## gem list following:"
       puts `gem list -d jruby-jars`
       puts "######################## gem list ended:"
