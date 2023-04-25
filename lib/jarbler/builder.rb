@@ -241,7 +241,6 @@ module Jarbler
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
       installer = Gem::DependencyInstaller.new
       installed = installer.install('jruby-jars', config.jruby_version)
-      puts "Installed jruby-jars gem: #{installed.inspect}"
       puts "Installed at: #{installed[0]&.full_gem_path}"
 
       # add the current path of jruby-jars to the gem search path if not already there

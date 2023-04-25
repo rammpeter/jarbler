@@ -9,29 +9,36 @@ require 'jarbler/config'
 class BuilderTest < Minitest::Test
   def setup
     debug "##### Starting test #{self.class.name}::#{self.name}"
+    debug ">>>> Gem.paths.path in setup: #{Gem.paths.path}"
+
     Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
     @builder = Jarbler::Builder.new
   end
 
   def teardown
+    debug ">>>> Gem.paths.path in teardown: #{Gem.paths.path}"
     debug "##### End test #{self.class.name}::#{self.name}"
   end
 
   def test_exclude_dirs_removed
     in_temp_dir do
+      debug ">>>> Gem.paths.path in test_exclude_dirs_removed - start: #{Gem.paths.path}"
       # create the file/dir to exclude
       File.open('hugo', 'w') do |file|
         file.write("hugo")
       end
       Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
       prepare_gemfiles
+      debug ">>>> Gem.paths.path in test_exclude_dirs_removed - before builder: #{Gem.paths.path}"
       @builder.build_jar
+      debug ">>>> Gem.paths.path in test_exclude_dirs_removed - after builder: #{Gem.paths.path}"
       assert_jar_file(Dir.pwd)
     end
   end
 
   def test_local_bundle_path_configured
     in_temp_dir do
+      debug ">>>> Gem.paths.path in test_local_bundle_path_configured - tempdir: #{Gem.paths.path}"
       FileUtils.mkdir_p('.bundle')
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
@@ -40,7 +47,9 @@ class BuilderTest < Minitest::Test
       # ensure that builder is run in new Bundler environment which recognizes the local bundle path
       Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
         Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
+        debug ">>>> Gem.paths.path in test_local_bundle_path_configured - before builder: #{Gem.paths.path}"
         @builder.build_jar
+        debug ">>>> Gem.paths.path in test_local_bundle_path_configured - after builder: #{Gem.paths.path}"
       end
 
 
