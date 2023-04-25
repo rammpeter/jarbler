@@ -165,9 +165,6 @@ module Jarbler
           return
         end
       end
-      puts "######################## gem list following:"
-      puts `gem list -d minitest`
-      puts "######################## gem list ended:"
       raise "Gem #{gem_full_name} not found in any of the following locations:\n#{gem_search_locations.join("\n")}"
     end
 
@@ -243,7 +240,13 @@ module Jarbler
 
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
       installer = Gem::DependencyInstaller.new
-      installer.install('jruby-jars', config.jruby_version)
+      installed = installer.install('jruby-jars', config.jruby_version)
+      puts "Installed jruby-jars gem: #{installed.inspect}"
+      puts "Installed at: #{installed[0]&.full_gem_path}"
+      puts "######################## gem list following:"
+      puts `gem list -d jruby-jars`
+      puts "######################## gem list ended:"
+      puts "Gem.paths.path: #{Gem.paths.path}"
 
       # Get the location of the jruby-jars gem
       spec = Gem::Specification.find_by_name('jruby-jars', config.jruby_version)
