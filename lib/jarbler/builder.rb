@@ -119,7 +119,7 @@ module Jarbler
       needed_gems = []
       lockfile_specs = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
 
-      Bundler.setup # Load Gems specified in Gemfile
+      # Bundler.setup # Load Gems specified in Gemfile
       # filter Gems needed for production
       gemfile_specs = Bundler.definition.dependencies.select do |d|
         d.groups.include?(:default) || d.groups.include?(:production)
