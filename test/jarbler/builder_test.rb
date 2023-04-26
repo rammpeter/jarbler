@@ -86,6 +86,7 @@ class BuilderTest < Minitest::Test
       debug "Gem.paths.path after Bundler::Installer.install: #{Gem.paths.path}"
 
       Bundler.setup
+      debug "Gem.paths.path after Bundler.setup: #{Gem.paths.path}"
       yield if block_given?
     end
   end
