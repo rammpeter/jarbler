@@ -186,27 +186,14 @@ module Jarbler
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
       installer = Gem::DependencyInstaller.new
       installed = installer.install('jruby-jars', config.jruby_version)
-      puts "jRuby jars installed at: #{installed[0]&.full_gem_path}"
+      raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
 
-      # add the current path of jruby-jars to the gem search path if not already there
-      current_jruby_jars_gem_path = File.expand_path("../..", installed[0]&.full_gem_path)
-      puts "jRuby jars gem path is : #{current_jruby_jars_gem_path}"
-      puts "Gem.paths.path before adding: #{Gem.paths.path}"
-      unless Gem.paths.path.include?(current_jruby_jars_gem_path)
-        Gem.paths.path << current_jruby_jars_gem_path
-        debug "Added #{current_jruby_jars_gem_path} to Gem.paths.path"
-        debug "Gem.paths.path is now: #{Gem.paths.path}"
-        puts "########################## added jruby-jars gem path to Gem.paths.path"
-      end
-
-      puts "######################## gem list following:"
-      puts `gem list -d jruby-jars`
-      puts "######################## gem list ended:"
-      puts "Gem.paths.path after adding: #{Gem.paths.path}"
+      jruby_jars_location = installed[0]&.full_gem_path
+      debug "jRuby jars installed at: #{jruby_jars_location}"
 
       # Get the location of the jruby-jars gem
-      spec = Gem::Specification.find_by_name('jruby-jars', config.jruby_version)
-      jruby_jars_location = spec.gem_dir
+      # spec = Gem::Specification.find_by_name('jruby-jars', config.jruby_version)
+      # jruby_jars_location = spec.gem_dir
 
       file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
       file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
