@@ -13,9 +13,8 @@ module Jarbler
     def build_jar
       debug "Running with Ruby version '#{RUBY_VERSION}' on platform '#{RUBY_PLATFORM}'. Engine '#{RUBY_ENGINE}' version '#{RUBY_ENGINE_VERSION}'"
 
-      # create a temporary directory for staging
-      staging_dir = Dir.mktmpdir
-
+      @config = nil # Ensure config is read from file or default. Necessary for testing only because of caching
+      staging_dir = Dir.mktmpdir # create a temporary directory for staging
       app_root = Dir.pwd
       debug "Project dir: #{app_root}"
 
@@ -166,7 +165,7 @@ module Jarbler
     end
 
     def config
-      unless defined? @config
+      if !defined?(@config) || @config.nil?
        @config = Config.create
        debug("Config attributes:")
        @config.instance_variables.each do |var|

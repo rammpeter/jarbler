@@ -18,6 +18,55 @@ class BuilderTest < Minitest::Test
     debug "##### End test #{self.class.name}::#{self.name}"
   end
 
+  def test_jar_name
+    in_temp_dir do
+      Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'")
+      with_prepared_gemfile do
+        @builder.build_jar
+        assert File.exist?('hugo.jar'), "Jar file 'hugo.jar' should exist"
+        assert_jar_file(Dir.pwd)
+      end
+    end
+  end
+
+  def test_jruby_version
+    in_temp_dir do
+      with_prepared_gemfile do
+        Jarbler::Config.new.write_config_file("config.jruby_version = '9.2.4.0'")
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert File.exist?("jruby-core-9.2.4.0-complete.jar"), "jRuby version core file should exist"
+        end
+      end
+    end
+    in_temp_dir do
+      with_prepared_gemfile do
+        File.open('.ruby-version', 'w') { |file| file.write("jruby-9.2.3.0") }
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert File.exist?("jruby-core-9.2.3.0-complete.jar"), "jRuby version core file should exist"
+        end
+      end
+    end
+  end
+
+  def test_executable_and_params
+    in_temp_dir do
+      with_prepared_gemfile do
+        Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes = ['hugo']\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
+        File.open('hugo', 'w') do |file|
+          file.write("#!/usr/bin/env ruby\n")
+          file.write("puts ARGV.inspect\n")
+        end
+        @builder.build_jar
+        assert_jar_file(Dir.pwd)
+        response = `java -jar hugo.jar -c -d`
+        response_match = response.lines.select{|s| s == "[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug info
+        assert !response_match.empty?, "Response should contain the executable params but is:\n#{response}"
+      end
+    end
+  end
+
   def test_exclude_dirs_removed
     in_temp_dir do
       # create the file/dir to exclude
@@ -146,11 +195,13 @@ class BuilderTest < Minitest::Test
 
   # Execute the block in temporary directory
   def in_temp_dir
+    current_dir = Dir.pwd
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         yield
       end
     end
+    Dir.chdir(current_dir)
   end
 
   def debug(msg)

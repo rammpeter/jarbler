@@ -43,7 +43,7 @@ Additional command line parameters are passed through to the executed Ruby app (
 ## Configuration
 
 The file config/jarble.rb contains the configuration for Jarbler. 
-To create a template config file with information about the supported configuration options, execute:
+To create a template config file with information about all the supported configuration options, execute:
 
     $ jarble config
 

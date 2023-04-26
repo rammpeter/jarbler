@@ -3,7 +3,7 @@ module Jarbler
     attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params
 
     CONFIG_FILE = 'config/jarble.rb'
-    # create instence of Config class with defaults or from config file
+    # create instance of Config class with defaults or from config file
     # Should be called from rails/ruby root directory
     def self.create
       if File.exist?(CONFIG_FILE)
