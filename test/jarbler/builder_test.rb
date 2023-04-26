@@ -21,13 +21,29 @@ class BuilderTest < Minitest::Test
   def test_exclude_dirs_removed
     in_temp_dir do
       # create the file/dir to exclude
-      File.open('hugo', 'w') do |file|
-        file.write("hugo")
-      end
+      File.open('hugo', 'w') { |file| file.write("hugo") }
       Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
       with_prepared_gemfile do
         @builder.build_jar
         assert_jar_file(Dir.pwd)
+      end
+    end
+  end
+
+  def test_excluded_dir_and_file_contained
+    in_temp_dir do
+      File.open('hugo', 'w') { |file| file.write("hugo") }
+      FileUtils.mkdir_p('included')
+      File.open('included/hugo', 'w') { |file| file.write("hugo") }
+      Jarbler::Config.new.write_config_file("config.includes = ['hugo', 'included']")
+      with_prepared_gemfile do
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert File.exist?('app_root/included') &&
+                   File.directory?('app_root/included') &&
+                   File.exist?('app_root/included/hugo'), "Dir 'included' should be in jar file"
+          assert File.exist?('app_root/hugo') , "File 'app_root/hugo' should be in jar file"
+        end
       end
     end
   end
@@ -40,9 +56,11 @@ class BuilderTest < Minitest::Test
       end
       with_prepared_gemfile('minitest') do
         @builder.build_jar
-        assert_jar_file(Dir.pwd)
+        assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
+          expected_dir = "gems/*/*/gems/minitest*"
+          assert !Dir.glob(expected_dir).empty?, "Dir #{expected_dir} should be in jar file"
+        end
       end
-      # TODO: Check if additional Gem is in jar file
     end
   end
 
@@ -110,17 +128,18 @@ class BuilderTest < Minitest::Test
       Dir.chdir(dir) do             # Change to empty temp dir to extract jar file
         assert system("jar -xf #{File.basename(jar_filepath)}")
 
-        # Ensure that excluded files are not in jar file
+        # Ensure that excluded files are not in jar file in folder app_root
         config.excludes.each do |exclude|
-          assert !File.exist?(exclude), "File #{exclude} should not be in jar file"
+          assert !File.exist?("app_root/#{exclude}"), "File app_root/#{exclude} should not be in jar file"
         end
 
         # Ensure that included files are in jar file if they exist in original app root
         config.includes.each do |include|
-          if File.exist?("#{app_root}/include")
-            assert File.exist?(include), "File #{include} should be in jar file"
+          if File.exist?("#{app_root}/#{include}")  # File exists in original source
+            assert File.exist?("app_root/#{include}"), "File app_root/#{include} should be in jar file"
           end
         end
+        yield if block_given?
       end
     end
   end
