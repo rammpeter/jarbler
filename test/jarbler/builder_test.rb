@@ -65,14 +65,24 @@ class BuilderTest < Minitest::Test
     end
     Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
       Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
-      debug "Gem path: #{Gem.paths.path}"
+      debug "Gem path afterBundler.reset! : #{Gem.paths.path}"
       definition = Bundler.definition()
       definition.resolve_remotely! # Install any missing gems and update existing gems
       # Write the new Gemfile.lock file
       File.open('Gemfile.lock', 'w') do |file|
         file.write(Bundler::LockfileGenerator.generate(definition))
       end
-      Bundler::Installer.install(Dir.pwd, definition) # Install missing Gems from Gemfile
+      installer = Bundler::Installer.install(Dir.pwd, definition) # Install missing Gems from Gemfile
+
+      # Check if the Gem paths of the installed Gems are already in the Gem.paths.path
+      installer.definition.specs.map{|s| s.full_gem_path}.uniq.each do |path|
+        gem_path = File.expand_path("../..", path)
+        unless Gem.paths.path.include?(gem_path)
+          Gem.paths.path << gem_path
+          debug "Added missing gem path #{gem_path} to Gem.paths.path"
+        end
+      end
+
       Bundler.setup
       yield if block_given?
     end
