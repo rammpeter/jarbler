@@ -82,6 +82,7 @@ class BuilderTest < Minitest::Test
           debug "Added missing gem path #{gem_path} to Gem.paths.path"
         end
       end
+      debug "Gem.paths.path after Bundler::Installer.install: #{Gem.paths.path}"
 
       Bundler.setup
       yield if block_given?
