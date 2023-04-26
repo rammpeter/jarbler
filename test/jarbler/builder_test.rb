@@ -9,28 +9,24 @@ require 'jarbler/config'
 class BuilderTest < Minitest::Test
   def setup
     debug "##### Starting test #{self.class.name}::#{self.name}"
-    debug ">>>> Gem.paths.path in setup: #{Gem.paths.path}"
-    debug ">>>> GEM_PATH in setup: #{ENV['GEM_PATH']}"
+    debug "Gem.paths.path in setup: #{Gem.paths.path}"
+    debug "GEM_PATH in setup: #{ENV['GEM_PATH']}" if ENV['GEM_PATH']
     @builder = Jarbler::Builder.new
   end
 
   def teardown
-    debug ">>>> Gem.paths.path in teardown: #{Gem.paths.path}"
     debug "##### End test #{self.class.name}::#{self.name}"
   end
 
   def test_exclude_dirs_removed
     in_temp_dir do
-      debug ">>>> Gem.paths.path in test_exclude_dirs_removed - start: #{Gem.paths.path}"
       # create the file/dir to exclude
       File.open('hugo', 'w') do |file|
         file.write("hugo")
       end
       Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
       with_prepared_gemfile do
-        debug ">>>> Gem.paths.path in test_exclude_dirs_removed - before builder: #{Gem.paths.path}"
         @builder.build_jar
-        debug ">>>> Gem.paths.path in test_exclude_dirs_removed - after builder: #{Gem.paths.path}"
         assert_jar_file(Dir.pwd)
       end
     end
@@ -38,15 +34,12 @@ class BuilderTest < Minitest::Test
 
   def test_local_bundle_path_configured
     in_temp_dir do
-      debug ">>>> Gem.paths.path in test_local_bundle_path_configured - tempdir: #{Gem.paths.path}"
       FileUtils.mkdir_p('.bundle')
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
       with_prepared_gemfile('minitest') do
-        debug ">>>> Gem.paths.path in test_local_bundle_path_configured - before builder: #{Gem.paths.path}"
         @builder.build_jar
-        debug ">>>> Gem.paths.path in test_local_bundle_path_configured - after builder: #{Gem.paths.path}"
         assert_jar_file(Dir.pwd)
       end
       # TODO: Check if additional Gem is in jar file
@@ -76,8 +69,12 @@ class BuilderTest < Minitest::Test
 
       # Check if the Gem paths of the installed Gems are already in the Gem.paths.path
       definition = Bundler.definition   # Read the definition again after installing missing Gems
-      definition.specs.map{|s| s.full_gem_path}.uniq.each do |path|
-        gem_path = File.expand_path("../..", path)
+      gem_paths = []
+      definition.specs.each do |spec|
+        gem_paths << File.expand_path("../..", spec.full_gem_path) if spec.name != 'bundler'
+      end
+
+      gem_paths.uniq.each do |gem_path|
         unless Gem.paths.path.include?(gem_path)
           Gem.paths.path << gem_path
           debug "Added missing gem path #{gem_path} to Gem.paths.path"
