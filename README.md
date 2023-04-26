@@ -1,7 +1,7 @@
 # Jarbler
 Pack a Ruby application into an executable jar file.
 
-Jarbler allows you to create an self executing Java jar file containing your Ruby application and all its Gem dependencies.
+Jarbler creates a self executing Java jar file containing a Ruby application and all its Gem dependencies.
 
 This tool is inspired by the widely used jRuby runner Warbler. 
 In contrast to Warbler no Java servlet container is needed for execution.
