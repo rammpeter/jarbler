@@ -27,13 +27,16 @@ import java.util.Map;
 import java.util.HashMap;
 import java.lang.reflect.Field;
 import java.io.FileWriter;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 
 class JarMain {
 
     // executed by java -jar <jar file name>
     // No arguments are passed
     public static void main(String[] args) {
-        debug("Start java process in jar file");
+        debug("Start java process in jar file "+jar_file_name());
+        debug("JVM: "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" "+System.getProperty("java.vm.version")+" "+System.getProperty("java.home"));
         if (args.length > 0) {
             debug("Java command line arguments are: ");
             for (String arg : args) {
@@ -224,5 +227,19 @@ class JarMain {
         fw.write("BUNDLE_PATH: " + gem_path + "\n");
         fw.write("BUNDLE_WITHOUT: test:development\n");
         fw.close();
+    }
+
+    private static String jar_file_name() {
+        String jarFileName = "";
+
+        try {
+            ProtectionDomain protectionDomain = JarMain.class.getProtectionDomain();
+            CodeSource codeSource = protectionDomain.getCodeSource();
+            URL location = codeSource.getLocation();
+            jarFileName = new File(location.toURI()).getName();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return jarFileName;
     }
 }
