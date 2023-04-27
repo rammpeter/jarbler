@@ -28,6 +28,7 @@ To adjust Jarbler's configuration, modify the settings in config file ´config/j
     $ jarble config
 
 ### Preconditions
+* Dependency handling should be based on Bundler (existence of Gemfile is required)
 * The Ruby app should be capable of running with jRuby
 * Gems with native extensions should not be used (e.g. sassc)
   * if needed for development or test such Gems with native extensions should be moved to the development and test group in the Gemfile.
