@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["Peter@ramm-oberhermsdorf.de"]
 
   spec.summary = "Pack a Ruby app into a Java jar file"
-  spec.description = "Pack Ruby combined with jRuby runtime into a jar file to simply run the app on any Java platform by '> java -jar file.jar'"
+  spec.description = "Pack a Ruby app combined with jRuby runtime and all its Gem dependencies into a jar file to simply run the app on any Java platform by '> java -jar file.jar'"
   spec.homepage = "https://github.com/rammpeter/jarbler"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
