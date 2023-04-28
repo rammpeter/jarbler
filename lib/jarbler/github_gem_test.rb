@@ -6,6 +6,5 @@ module Jarbler
     def check_github_gem_dependency
       "SUCCESS"
     end
-
-
+  end
 end

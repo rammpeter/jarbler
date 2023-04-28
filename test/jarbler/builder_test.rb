@@ -50,19 +50,24 @@ class BuilderTest < Minitest::Test
     end
   end
 
+  # Test a particular executable and also dependency on a git gem
   def test_executable_and_params
     in_temp_dir do
-      with_prepared_gemfile do
+      with_prepared_gemfile("gem 'jarbler', github: 'rammpeter/jarbler', branch: 'test_github_gem'") do
         Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes = ['hugo']\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
         File.open('hugo', 'w') do |file|
           file.write("#!/usr/bin/env ruby\n")
           file.write("puts ARGV.inspect\n")
+          file.write("require 'jarbler/github_gem_test'\n")
+          file.write("puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
         end
         @builder.build_jar
         assert_jar_file(Dir.pwd)
         response = `java -jar hugo.jar -c -d`
         response_match = response.lines.select{|s| s == "[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug info
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{response}"
+        response_match = response.lines.select{|s| s == "SUCCESS" } # extract the response line from debug info
+        assert !response_match.empty?, "Response should contain the SUCCESS from branch test_github_gem but is:\n#{response}"
       end
     end
   end
@@ -97,13 +102,15 @@ class BuilderTest < Minitest::Test
     end
   end
 
+  # Test if Gems are installed local in vendor/bundle
+  # in addition, dependency on github gem is tested
   def test_local_bundle_path_configured
     in_temp_dir do
       FileUtils.mkdir_p('.bundle')
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
-      with_prepared_gemfile(["gem 'minitest'", "gem 'rails-angular-xss', github: 'opf/rails-angular-xss'"]) do
+      with_prepared_gemfile(["gem 'minitest'"]) do
         @builder.build_jar
         assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
           expected_dir = "gems/*/*/gems/minitest*"
