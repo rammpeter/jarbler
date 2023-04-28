@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in jarbler.gemspec
+# Specify your gem's dependencies in jarbler_test_github_gem.gemspec
 gemspec
 
 # gem "rake", "~> 13.0"
