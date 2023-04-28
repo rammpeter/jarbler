@@ -1,3 +1,6 @@
+require 'rubygems'
+require 'json'
+
 module Jarbler
   class Config
     attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params
@@ -90,12 +93,18 @@ module Jarbler
         else
           # no .ruby-version file, use jRuby version of the latest Gem
           # Fetch the gem specification from Rubygems.org
-          command = "gem search --remote jruby-jars"
-          lines = `#{command}`
-          raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
-          jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
-          raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
-          self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
+          # search for the gem and get the JSON response
+          response = Gem::SpecFetcher.fetcher.search_for_dependency(Gem::Dependency.new('jruby-jars'))
+          # extract the versions from the response
+          self.jruby_version = response&.first&.first&.first&.version
+          raise "Unable to determine the latest available version of jruby-jars gem!\Rsponse = #{response.inspect}" unless self.jruby_version
+
+          #command = "gem search --remote jruby-jars"
+          #lines = `#{command}`
+          #raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
+          #jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
+          #raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
+          #self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
           debug "jRuby version from latest jruby-jars gem: #{jruby_version}"
         end
       end
