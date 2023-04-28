@@ -96,7 +96,7 @@ module Jarbler
           # search for the gem and get the JSON response
           response = Gem::SpecFetcher.fetcher.search_for_dependency(Gem::Dependency.new('jruby-jars'))
           # extract the versions from the response
-          self.jruby_version = response&.first&.first&.first&.version
+          self.jruby_version = response&.first&.first&.first&.version&.to_s
           raise "Unable to determine the latest available version of jruby-jars gem!\Rsponse = #{response.inspect}" unless self.jruby_version
 
           #command = "gem search --remote jruby-jars"
