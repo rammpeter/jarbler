@@ -103,7 +103,7 @@ class BuilderTest < Minitest::Test
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
-      with_prepared_gemfile('minitest') do
+      with_prepared_gemfile(["gem 'minitest'", "gem 'rails-angular-xss', github: 'opf/rails-angular-xss'"]) do
         @builder.build_jar
         assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
           expected_dir = "gems/*/*/gems/minitest*"
@@ -115,12 +115,13 @@ class BuilderTest < Minitest::Test
 
   private
   # Prepare Gemfiles in temporary test dir and install gems
-  def with_prepared_gemfile(additional_gems = [])
-    additional_gems = [additional_gems] unless additional_gems.is_a?(Array) # Convert to array if not already
+  # @param additional_gem_file_lines [Array<String>] additional gemfile lines
+  def with_prepared_gemfile(additional_gem_file_lines = [])
+    additional_gem_file_lines = [additional_gem_file_lines] unless additional_gem_file_lines.is_a?(Array) # Convert to array if not already
     File.open('Gemfile', 'w') do |file|
       file.write("source 'https://rubygems.org'\n")
-      additional_gems.each do |gem|
-        file.write("gem '#{gem}'\n")
+      additional_gem_file_lines.each do |gem_file_line|
+        file.write("#{gem_file_line}\n")
       end
     end
     Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
