@@ -3,7 +3,7 @@
 require_relative "lib/jarbler/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "jarbler_test_github"
+  spec.name = "jarbler_test_github_gem"
   spec.version = Jarbler::VERSION
   spec.authors = ["Peter Ramm"]
   spec.email = ["Peter@ramm-oberhermsdorf.de"]
