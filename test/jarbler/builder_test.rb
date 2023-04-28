@@ -52,17 +52,27 @@ class BuilderTest < Minitest::Test
 
   def test_executable_and_params
     in_temp_dir do
-      with_prepared_gemfile do
+      with_prepared_gemfile("gem 'jarbler', github: 'rammpeter/jarbler', branch: 'test_github_gem'") do
         Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes = ['hugo']\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
         File.open('hugo', 'w') do |file|
           file.write("#!/usr/bin/env ruby\n")
           file.write("puts ARGV.inspect\n")
+          file.write("begin\n")
+          file.write("  require 'jarbler/github_gem_test'\n")
+          file.write("  puts 'Before test'\n")
+          file.write("  puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
+          file.write("  puts 'After test'\n")
+          file.write("rescue Exception => e\n")
+          file.write("  puts 'e.message'\n")
+          file.write("  puts e.backtrace.join(\"\n\")\n")
+          file.write("end\n")
         end
         @builder.build_jar
         assert_jar_file(Dir.pwd)
         response = `java -jar hugo.jar -c -d`
         response_match = response.lines.select{|s| s == "[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug info
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{response}"
+        assert !response.lines.select{|s| s == "SUCCESS\n" }.empty?, "Response should contain the line SUCCESS but is:\n#{response}"
       end
     end
   end
@@ -103,7 +113,7 @@ class BuilderTest < Minitest::Test
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
-      with_prepared_gemfile(["gem 'minitest'", "gem 'rails-angular-xss', github: 'opf/rails-angular-xss'"]) do
+      with_prepared_gemfile(["gem 'minitest'"]) do
         @builder.build_jar
         assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
           expected_dir = "gems/*/*/gems/minitest*"
