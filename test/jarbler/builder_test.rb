@@ -52,12 +52,14 @@ class BuilderTest < Minitest::Test
 
   def test_executable_and_params
     in_temp_dir do
-      with_prepared_gemfile("gem 'jarbler_test_github_gem', github: 'rammpeter/jarbler', branch: 'test_github_gem'") do
-        Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes = ['hugo']\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
+      with_prepared_gemfile(["gem 'bundler'", "gem 'jarbler_test_github_gem', github: 'rammpeter/jarbler', branch: 'test_github_gem'"]) do
+        Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes << 'hugo'\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
         File.open('hugo', 'w') do |file|
           file.write("#!/usr/bin/env ruby\n")
           file.write("puts ARGV.inspect\n")
           file.write("begin\n")
+          file.write("  require 'bundler'\n")
+          file.write("  Bundler.setup\n")
           file.write("  require 'jarbler/github_gem_test'\n")
           file.write("  puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
           file.write("rescue Exception => e\n")
@@ -223,24 +225,25 @@ class BuilderTest < Minitest::Test
     puts msg if ENV['DEBUG']
   end
 
-  # Remove the Gem specific environment to get a fresh environment
+  # Remove the Gem/bundler/ruby specific environment to get a environment where the jar file can be started clean
   # Gem env can be restored by calling restore_gem_env
   # @return [void]
   def remove_gem_env
-    @gem_home = ENV['GEM_HOME']
-    @gem_path = ENV['GEM_PATH']
-    @gem_root = ENV['GEM_ROOT']
-    ENV.delete('GEM_HOME')
-    ENV.delete('GEM_PATH')
-    ENV.delete('GEM_ROOT')
+    @bufferred_ruby_env = {}
+    ENV.to_h.each do |key, value|
+      if key['GEM'] || key['BUNDLE'] || key['RUBY']
+        @bufferred_ruby_env[key] = value
+        ENV.delete(key)
+        debug "Temporary removed #{key} from ENV with value #{value}"
+      end
+    end
   end
 
   # Restore the Gem specific environment
   def restore_gem_env
-    raise "remove_gem_env must be called before restore_gem_env" unless defined?(@gem_home)
-    ENV['GEM_HOME'] = @gem_home
-    ENV['GEM_PATH'] = @gem_path
-    ENV['GEM_ROOT'] = @gem_root
+    raise "remove_gem_env must be called before restore_gem_env" unless defined?(@bufferred_ruby_env)
+    @bufferred_ruby_env.each do |key, value|
+      ENV[key] = value
+    end
   end
-
 end

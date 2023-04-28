@@ -30,12 +30,8 @@ module Jarbler
       # Get the needed Gems
       raise "Gemfile.lock not found in #{app_root}" unless File.exist?("#{app_root}/Gemfile.lock")
 
-      gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_version}"
-      FileUtils.mkdir_p("#{gem_target_location}/gems")
-      FileUtils.mkdir_p("#{gem_target_location}/specifications")
-
       # Copy the needed Gems to the staging directory
-      copy_needed_gems_to_staging(gem_target_location, app_root)
+      copy_needed_gems_to_staging(staging_dir, ruby_version)
 
       Dir.chdir(staging_dir) do
         # create the manifest file
@@ -102,26 +98,39 @@ module Jarbler
     end
 
     # Copy the needed Gems to the staging directory
-    # @param [String] gem_target_location Path to the staging directory
+    # @param staging_dir [String] the staging directory
+    # @param ruby_version [String] the corresponding ruby version of the jruby jars version
     # @return [void]
-    def copy_needed_gems_to_staging(gem_target_location, app_root)
+    def copy_needed_gems_to_staging(staging_dir, ruby_version)
+      gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_version}"
+      FileUtils.mkdir_p("#{gem_target_location}/gems")
+      FileUtils.mkdir_p("#{gem_target_location}/specifications")
+      FileUtils.mkdir_p("#{gem_target_location}/bundler/gems")
+
       needed_gems = gem_dependencies  # get the full names of the dependencies
       needed_gems.each do |needed_gem|
         # Get the location of the needed gem
         spec = Gem::Specification.find_by_name(needed_gem[:name], needed_gem[:version])
         raise "Gem #{needed_gem[:full_name]} not found for copying" unless spec
         debug "Found gem #{needed_gem[:full_name]} version #{needed_gem[:version]} in #{spec.gem_dir}"
-        file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
 
-        # rename the gem dir to the full name of the gem if name of gemdir does not contain the version (like for Gems from git)
-        FileUtils.mv("#{gem_target_location}/gems/#{File.basename(spec.gem_dir)}", "#{gem_target_location}/gems/#{needed_gem[:full_name]}") unless File.basename(spec.gem_dir) == needed_gem[:full_name]
-
-        if File.exist?("#{spec.gem_dir}/#{needed_gem[:name]}.gemspec") # *.gemspec exists directly in gem dir (like for Gems from git)
-          file_utils_copy("#{spec.gem_dir}/#{needed_gem[:name]}.gemspec", "#{gem_target_location}/specifications/#{needed_gem[:full_name]}.gemspec")
-        else
-          # try to find the gemspec in the specifications directory
+        # differentiate between Gems from git/bundler and Gems from rubygems
+        if spec.source.is_a?(Bundler::Source::Git)
+          file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
+        else  # Gem is from rubygems
+          file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
           file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
         end
+
+
+        # rename the gem dir to the full name of the gem if name of gemdir does not contain the version (like for Gems from git)
+        # FileUtils.mv("#{gem_target_location}/gems/#{File.basename(spec.gem_dir)}", "#{gem_target_location}/gems/#{needed_gem[:full_name]}") unless File.basename(spec.gem_dir) == needed_gem[:full_name]
+
+        # if File.exist?("#{spec.gem_dir}/#{needed_gem[:name]}.gemspec") # *.gemspec exists directly in gem dir (like for Gems from git)
+        #   file_utils_copy("#{spec.gem_dir}/#{needed_gem[:name]}.gemspec", "#{gem_target_location}/specifications/#{needed_gem[:full_name]}.gemspec")
+        # else
+        #   # try to find the gemspec in the specifications directory
+        # end
       end
     end
 
