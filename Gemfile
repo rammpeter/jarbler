@@ -8,10 +8,11 @@ gemspec
 # gem "rake", "~> 13.0"
 gem "rake"
 
+group(:development) do
+  gem 'rdoc'
+end
+
 group(:test)  do
   gem 'minitest'
   gem 'minitest-reporters'
-  # needed for minitests
-  # test should install the jruby-jars in right version itself
-  # gem 'jruby-jars'
 end

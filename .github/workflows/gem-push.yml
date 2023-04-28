@@ -83,7 +83,8 @@ jobs:
         if [[ $? -eq 0 ]]; then
           echo "RELEASE=$RELEASE already exists on rubygems.org, no push executed"
         else
-          echo "RELEASE=$RELEASE does not exist on rubygems.org"
+          echo "RELEASE=$RELEASE does not exist on rubygems.org yet, pushing..."
+          rdoc --all --ri --op doc
           gem push *.gem
         fi
       env:

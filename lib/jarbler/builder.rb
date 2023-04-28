@@ -85,6 +85,8 @@ module Jarbler
 
 
     # Check if there is an additional local bundle path in .bundle/config
+    # @param rails_root [String] the rails root directory
+    # @return [String] the local bundle path or nil if not configured
     def bundle_config_bundle_path(rails_root)
       bundle_path = nil # default
       if File.exist?("#{rails_root}/.bundle/config")
@@ -116,26 +118,18 @@ module Jarbler
 
         # differentiate between Gems from git/bundler and Gems from rubygems
         if spec.source.is_a?(Bundler::Source::Git)
+          # Copy the Gem from bundler/gems including the gemspec
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
         else  # Gem is from rubygems
+          # copy the Gem and gemspec separately
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
           file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
         end
-
-
-        # rename the gem dir to the full name of the gem if name of gemdir does not contain the version (like for Gems from git)
-        # FileUtils.mv("#{gem_target_location}/gems/#{File.basename(spec.gem_dir)}", "#{gem_target_location}/gems/#{needed_gem[:full_name]}") unless File.basename(spec.gem_dir) == needed_gem[:full_name]
-
-        # if File.exist?("#{spec.gem_dir}/#{needed_gem[:name]}.gemspec") # *.gemspec exists directly in gem dir (like for Gems from git)
-        #   file_utils_copy("#{spec.gem_dir}/#{needed_gem[:name]}.gemspec", "#{gem_target_location}/specifications/#{needed_gem[:full_name]}.gemspec")
-        # else
-        #   # try to find the gemspec in the specifications directory
-        # end
       end
     end
 
     # Read the default/production dependencies from Gemfile.lock and Gemfile
-    # @return [Array] Array with full names of dependencies
+    # @return [Array] Array with Hashes containing: name, version, full_name
     def gem_dependencies
       needed_gems = []
       lockfile_specs = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
@@ -166,7 +160,7 @@ module Jarbler
     # recurively find all indirect dependencies
     # @param [Array] lockfile_specs Array of Bundler::LockfileParser::Spec objects
     # @param [Bundler::LockfileParser::Spec] lockfile_spec current lockfile spec to check for their dependencies
-    # @param [Array] needed_gems Array with full names of already found dependencies, add findings here
+    # @param [Array] needed_gems Array with Hashes containing: name, version, full_name
     # @return [void]
     def add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
       lockfile_spec.dependencies.each do |lockfile_spec_dep|
@@ -182,10 +176,16 @@ module Jarbler
         end
       end
     end
+
+    # Output debug message if DEBUG environment variable is set
+    # @param [String] msg Message to output
+    # @return [void]
     def debug(msg)
       puts msg if ENV['DEBUG']
     end
 
+    # Get the config object
+    # @return [Config] the config object
     def config
       if !defined?(@config) || @config.nil?
        @config = Config.create
@@ -200,7 +200,6 @@ module Jarbler
 
     # Copy the jruby-jars to the staging directory
     # @param [String] staging_dir Path to the staging directory
-    # @param [Array] gem_search_locations Array of Gem locations to look for jRuby jars
     # @return [String] the ruby version of the jRuby jars
     def copy_jruby_jars_to_staging(staging_dir)
 
@@ -228,7 +227,9 @@ module Jarbler
       ruby_version
     end
 
-    # Execute the command and return the output
+    # Execute the command in OS and return the output
+    # @param [String] command Command to execute
+    # @return [String] the output of the command
     def exec_command(command)
       lines = `#{command}`
       raise "Command \"#{command}\"failed with return code #{$?} and output:\n#{lines}" unless $?.success?
@@ -237,6 +238,9 @@ module Jarbler
     end
 
     # Copy file or directory with error handling
+    # @param [String] source Path to the source file or directory
+    # @param [String] destination Path to the destination file or directory
+    # @return [void]
     def file_utils_copy(source, destination)
       if File.exist?(source) && File.directory?(source)
         FileUtils.cp_r(source, destination)

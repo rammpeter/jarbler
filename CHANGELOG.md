@@ -15,3 +15,7 @@
 ## [0.1.3] - 2023-04-25
 
 - Removed .jruby-version so that the jruby version is not fixed anymore
+
+## [0.1.4] - 2023-04-28
+
+- Jarbler also supports Gemfile references to Gems with git dependencies now
