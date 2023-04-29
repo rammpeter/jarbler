@@ -15,6 +15,8 @@ Install the gem and add to the application's Gemfile by executing:
 If bundler is not being used to manage dependencies, install the gem by executing:
 
     $ gem install jarbler
+    
+[![Gem Version](https://badge.fury.io/rb/jarbler.svg)](https://badge.fury.io/rb/jarbler)
 
 ## Usage
 
