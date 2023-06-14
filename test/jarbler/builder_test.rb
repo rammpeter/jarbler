@@ -64,7 +64,7 @@ class BuilderTest < Minitest::Test
           file.write("  puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
           file.write("rescue Exception => e\n")
           file.write("  puts 'Exception in test executable hugo'\n")
-          file.write("  puts 'e.message'\n")
+          file.write("  puts e.message\n")
           file.write("  puts e.backtrace.join(\"\n\")\n")
           file.write("  raise\n")
           file.write("end\n")
