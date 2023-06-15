@@ -56,9 +56,12 @@ class BuilderTest < Minitest::Test
         Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes << 'hugo'\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
         File.open('hugo', 'w') do |file|
           file.write("#!/usr/bin/env ruby\n")
-          file.write("puts ARGV.inspect\n")
+          file.write("puts 'Starting application hugo'\n")
+          file.write("puts 'hugo:' + ARGV.inspect\n")
           file.write("begin\n")
+          file.write("  puts 'hugo:' + 'require bundler'\n")
           file.write("  require 'bundler'\n")
+          file.write("  puts 'hugo:' + 'require Bundler.setup'\n")
           file.write("  Bundler.setup\n")
           file.write("  require 'jarbler/github_gem_test'\n")
           file.write("  puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
@@ -76,7 +79,7 @@ class BuilderTest < Minitest::Test
         response = `java -jar hugo.jar -c -d`
         restore_gem_env
         debug "After executing the jar file"
-        response_match = response.lines.select{|s| s == "[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug info
+        response_match = response.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{response}"
         assert !response.lines.select{|s| s == "SUCCESS\n" }.empty?, "Response should contain the line SUCCESS but is:\n#{response}"
       end

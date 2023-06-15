@@ -1,21 +1,29 @@
 ## [Unreleased]
 
-## [0.1.0] - 2023-04-12
+## [0.1.5] - 2023-06-15
 
-- Initial release
+- Bugfix: use minor ruby version without patch level for Gem files location
 
-## [0.1.1] - 2023-04-24
+## [0.1.4] - 2023-04-28
 
-- Fixed the bug 'java.lang.ClassNotFoundException: org.jruby.Main' with Windows
-
-## [0.1.2] - 2023-04-24
-
-- extract valid Gem paths from Bundler instead of using the environment variable GEM_PATH 
+- Jarbler also supports Gemfile references to Gems with git dependencies now
 
 ## [0.1.3] - 2023-04-25
 
 - Removed .jruby-version so that the jruby version is not fixed anymore
 
-## [0.1.4] - 2023-04-28
+## [0.1.2] - 2023-04-24
 
-- Jarbler also supports Gemfile references to Gems with git dependencies now
+- extract valid Gem paths from Bundler instead of using the environment variable GEM_PATH
+
+## [0.1.1] - 2023-04-24
+
+- Fixed the bug 'java.lang.ClassNotFoundException: org.jruby.Main' with Windows
+
+## [0.1.0] - 2023-04-12
+
+- Initial release
+
+
+
+

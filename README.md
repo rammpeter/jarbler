@@ -49,9 +49,18 @@ To create a template config file with information about all the supported config
 
     $ jarble config
 
-The default configuration supports Ruby on Rails applications.<br>
-The executable is set to "bin/rails" by default.<br>
-The default executable parameters are  "server -p 8080 -e production".
+The default configuration if focused on Ruby on Rails applications.<br>
+
+### Configuration options
+| Option            | Default value                                                                  | Description                                                         |
+|-------------------|--------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| executable        | "bin/rails"                                                                    | The ruby file to run at execution of jar file                       |
+| executable_params | ["server", "-e", "production", "-p", "8080"]                                   | Command line parameters to be used for the ruby executable          |
+| excludes          | ["tmp/cache", "tmp/pids", ...] (see generated template file for whole content) | The files and dirs of the project to exlude from the include option |
+| includes          | ["app", "bin", "config", ...] (see generated template file for whole content)  | The files and dirs of the project to include in the jar file        |
+| jar_name          | &lt; Name of project dir &gt;.jar                                              | The name of the generated jar file                                  |
+| jruby_version     | The current most recent jRuby version                                          | The version of the jRuby runtime to use                             |
+
 
 ## Troubleshooting
 * Set DEBUG=true in environment to get additional runtime information
