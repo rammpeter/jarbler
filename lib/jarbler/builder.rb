@@ -18,7 +18,7 @@ module Jarbler
       app_root = Dir.pwd
       debug "Project dir: #{app_root}"
 
-      ruby_version = copy_jruby_jars_to_staging(staging_dir) # Copy the jruby jars to the staging directory
+      ruby_minor_version = copy_jruby_jars_to_staging(staging_dir) # Copy the jruby jars to the staging directory
       exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
@@ -31,7 +31,7 @@ module Jarbler
       raise "Gemfile.lock not found in #{app_root}" unless File.exist?("#{app_root}/Gemfile.lock")
 
       # Copy the needed Gems to the staging directory
-      copy_needed_gems_to_staging(staging_dir, ruby_version)
+      copy_needed_gems_to_staging(staging_dir, ruby_minor_version)
 
       Dir.chdir(staging_dir) do
         # create the manifest file
@@ -101,10 +101,10 @@ module Jarbler
 
     # Copy the needed Gems to the staging directory
     # @param staging_dir [String] the staging directory
-    # @param ruby_version [String] the corresponding ruby version of the jruby jars version
+    # @param ruby_minor_version [String] the corresponding ruby minor version of the jruby jars version
     # @return [void]
-    def copy_needed_gems_to_staging(staging_dir, ruby_version)
-      gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_version}"
+    def copy_needed_gems_to_staging(staging_dir, ruby_minor_version)
+      gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_minor_version}"
       FileUtils.mkdir_p("#{gem_target_location}/gems")
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
       FileUtils.mkdir_p("#{gem_target_location}/bundler/gems")
@@ -200,7 +200,7 @@ module Jarbler
 
     # Copy the jruby-jars to the staging directory
     # @param [String] staging_dir Path to the staging directory
-    # @return [String] the ruby version of the jRuby jars
+    # @return [String] the minor ruby version of the jRuby jars with patch level set to 0
     def copy_jruby_jars_to_staging(staging_dir)
 
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
@@ -224,7 +224,9 @@ module Jarbler
       raise "Could not determine Ruby version for jRuby #{config.jruby_version} in following output:\n#{lines}" unless match_result
       ruby_version = match_result[0].tr('()', '')
       debug "Corresponding Ruby version for jRuby (#{config.jruby_version}): #{ruby_version}"
-      ruby_version
+      ruby_minor_version = ruby_version.split('.')[0..1].join('.') + '.0'
+      debug "Corresponding Ruby minor version for jRuby (#{config.jruby_version}): #{ruby_minor_version}"
+      ruby_minor_version
     end
 
     # Execute the command in OS and return the output

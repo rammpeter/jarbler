@@ -57,7 +57,7 @@ class JarMain {
                 jarPath = jarPath.substring(1); // remove the leading slash
             }
 
-            // extract the jarFile by executing jar -xf jarFileName
+            // extract the jarFile by unzipping it (not using the jar utility which may not be available)
             System.out.println("Extracting files from "+jarPath+" to "+ newFolder.getAbsolutePath());
             unzip(jarPath, newFolder.getAbsolutePath());
 
@@ -135,8 +135,10 @@ class JarMain {
                 debug(" - " + arg);
             }
 
+            debug("jRuby set property 'user.dir' to '" + app_root + "'");
             System.setProperty("user.dir", app_root);
             // call the method org.jruby.Main.main
+            debug("Calling org.jruby.Main.main with: "+ mainArgs);
             mainMethod.invoke(null, (Object)mainArgs.toArray(new String[mainArgs.size()]));
         } catch (Exception e) {
             e.printStackTrace();
