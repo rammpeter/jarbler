@@ -57,35 +57,42 @@ jobs:
       with:
         ruby-version: '3.1'
 
-#    - name: Publish to GPR
-#      run: |
-#        mkdir -p $HOME/.gem
-#        touch $HOME/.gem/credentials
-#        chmod 0600 $HOME/.gem/credentials
-#        printf -- "---\n:github: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
-#        gem build *.gemspec
-#        gem push --KEY github --host https://rubygems.pkg.github.com/${OWNER} *.gem
-#      env:
-#        GEM_HOST_API_KEY: "Bearer ${{secrets.GITHUB_TOKEN}}"
-#        OWNER: ${{ github.repository_owner }}
-
-    - name: Build and publish to RubyGems
+    - name: Build
       run: |
         mkdir -p $HOME/.gem
         touch $HOME/.gem/credentials
         chmod 0600 $HOME/.gem/credentials
         printf -- "---\n:rubygems_api_key: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
         gem build jarbler.gemspec
-        RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
-        echo "Checking rubygems.org for RELEASE=$RELEASE"
+        JARBLER_RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
+        echo "JARBLER_RELEASE=$JARBLER_RELEASE" >> $GITHUB_ENV
+        echo "Checking rubygems.org for RELEASE=$JARBLER_RELEASE"
         set +e
-        gem search jarbler | grep jarbler | grep $RELEASE
+        gem search jarbler | grep jarbler | grep $JARBLER_RELEASE
         if [[ $? -eq 0 ]]; then
-          echo "RELEASE=$RELEASE already exists on rubygems.org, no push executed"
+          echo "RELEASE=$JARBLER_RELEASE already exists on rubygems.org, no push executed"
         else
-          echo "RELEASE=$RELEASE does not exist on rubygems.org yet, pushing..."
-          rdoc --all --ri --op doc
-          gem push *.gem
+          echo "RELEASE=$JARBLER_RELEASE does not exist on rubygems.org yet"
+          echo "Manual execution of 'gem push *.gem' required"
+          # rdoc --all --ri --op doc
+          # gem push *.gem
         fi
+      # env:
+        # GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
       env:
-        GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ env.JARBLER_RELEASE }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Put gem file into artifact
+      if: always()
+      uses: actions/upload-artifact@v1
+      with:
+        path: jarbler-*.gem
