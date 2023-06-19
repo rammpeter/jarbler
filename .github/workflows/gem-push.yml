@@ -95,4 +95,5 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v1
       with:
+        name: jarbler-${{ env.JARBLER_RELEASE }}.gem
         path: jarbler-*.gem
