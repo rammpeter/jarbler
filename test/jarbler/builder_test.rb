@@ -40,7 +40,7 @@ class BuilderTest < Minitest::Test
       end
     end
     in_temp_dir do
-      with_prepared_gemfile(["gem 'net-protocol'"]) do  # net-protocol is a default gem which should not be copied
+      with_prepared_gemfile do
         File.open('.ruby-version', 'w') { |file| file.write("jruby-9.2.3.0") }
         @builder.build_jar
         assert_jar_file(Dir.pwd) do
