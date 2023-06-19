@@ -82,9 +82,11 @@ jobs:
         echo "Check for existing release tag"
         response=$(curl --write-out '%{http_code}' --silent --output /dev/null -u ${{ secrets.GITHUB_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/releases/tags/$JARBLER_RELEASE")
         if [[ $response -eq 200 ]]; then
-          echo "::set-output name=tag_exists::true"
+          echo "RELEASE_TAG_EXISTS=true" >> $GITHUB_ENV
+          echo "Github release tag $JARBLER_RELEASE already exists"
         else
-          echo "::set-output name=tag_exists::false"
+          echo "RELEASE_TAG_EXISTS=false" >> $GITHUB_ENV
+          echo "Github release tag $JARBLER_RELEASE does not exist yet"
         fi
         ls -l
       # env:
@@ -92,7 +94,7 @@ jobs:
 
     - name: Create Release
       id: create_release
-      if: ${{ steps.Build.outputs.tag_exists }}" != "true"
+      if: ${{ env.RELEASE_TAG_EXISTS }} != "true"
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
