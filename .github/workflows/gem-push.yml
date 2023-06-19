@@ -79,12 +79,20 @@ jobs:
           # rdoc --all --ri --op doc
           # gem push *.gem
         fi
+        echo "Check for existing release tag"
+        response=$(curl --write-out '%{http_code}' --silent --output /dev/null -u ${{ secrets.GITHUB_TOKEN }} "https://api.github.com/repos/${{ github.repository }}/releases/tags/$JARBLER_RELEASE")
+        if [[ $response -eq 200 ]]; then
+          echo "::set-output name=tag_exists::true"
+        else
+          echo "::set-output name=tag_exists::false"
+        fi
         ls -l
       # env:
         # GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
 
     - name: Create Release
       id: create_release
+      if: ${{ steps.Build.outputs.tag_exists }}" != "true"
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
@@ -99,4 +107,4 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: jarbler-${{ env.JARBLER_RELEASE }}.gem
-        path: jarbler-*.gem
+        path: jarbler-${{ env.JARBLER_RELEASE }}.gem
