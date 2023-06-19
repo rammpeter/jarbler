@@ -94,7 +94,9 @@ jobs:
           fi
         fi
         ls -l
-      # env:
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # GH_TOKEN: ${{ github.token }}
         # GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
 
     - name: Put gem file into artifact
