@@ -99,7 +99,7 @@ jobs:
         # GH_TOKEN: ${{ github.token }}
         # GEM_HOST_API_KEY: "${{secrets.RUBYGEMS_AUTH_TOKEN}}"
 
-      - name: Put gem file into artifact
+    - name: Put gem file into artifact
       if: always()
       uses: actions/upload-artifact@v1
       with:
