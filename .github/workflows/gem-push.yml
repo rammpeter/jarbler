@@ -14,11 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        # os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
-        ruby: ['3.1']
-        # ruby: ['2.6', '2.7', '3.0', '3.1', head, jruby, jruby-head, truffleruby, truffleruby-head]
+        ruby: ['2.6', '2.7', '3.0', '3.1', head, jruby, jruby-head, truffleruby, truffleruby-head]
         exclude:
           # Exclude combinations of os and version
           - os: windows-latest
@@ -48,7 +46,7 @@ jobs:
     name: Build + Publish
     runs-on: ubuntu-latest
     needs: test
-    #if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
       packages: write
@@ -68,17 +66,8 @@ jobs:
         gem build jarbler.gemspec
         JARBLER_RELEASE=`ls jarbler-*.gem | sed 's/jarbler-//' | sed 's/\.gem//'`
         echo "JARBLER_RELEASE=$JARBLER_RELEASE" >> $GITHUB_ENV
-        echo "Checking rubygems.org for RELEASE=$JARBLER_RELEASE"
+        # Ensure that exit code != 0 does not stop the build
         set +e
-        gem search jarbler | grep jarbler | grep $JARBLER_RELEASE
-        if [[ $? -eq 0 ]]; then
-          echo "RELEASE=$JARBLER_RELEASE already exists on rubygems.org, no push executed"
-        else
-          echo "RELEASE=$JARBLER_RELEASE does not exist on rubygems.org yet"
-          echo "Manual execution of 'gem push *.gem' required"
-          # rdoc --all --ri --op doc
-          # gem push *.gem
-        fi
         echo "Check for existing release tag"
         gh release view $JARBLER_RELEASE -R ${{ github.repository }}
         if [[ $? -eq 0 ]]; then
@@ -93,7 +82,17 @@ jobs:
             exit 1
           fi
         fi
-        ls -l
+        echo "Checking rubygems.org for RELEASE=$JARBLER_RELEASE"
+        gem search jarbler | grep jarbler | grep $JARBLER_RELEASE
+        if [[ $? -eq 0 ]]; then
+          echo "RELEASE=$JARBLER_RELEASE already exists on rubygems.org, no push executed"
+        else
+          echo "RELEASE=$JARBLER_RELEASE does not exist on rubygems.org yet"
+          echo "Manual execution of 'gem push jarbler-${JARBLER_RELEASE}.gem' required! This will fix the CI at next run"
+          exit 1
+          # rdoc --all --ri --op doc
+          # gem push *.gem
+        fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # GH_TOKEN: ${{ github.token }}
