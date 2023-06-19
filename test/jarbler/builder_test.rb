@@ -122,7 +122,7 @@ class BuilderTest < Minitest::Test
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
-      with_prepared_gemfile(["gem 'minitest'"]) do
+      with_prepared_gemfile(["gem 'minitest'", "gem 'minitest-reporters'"]) do
         @builder.build_jar
         assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
           expected_dir = "gems/*/*/gems/minitest*"
