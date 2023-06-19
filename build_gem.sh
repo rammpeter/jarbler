@@ -3,7 +3,7 @@
 # remove existing gem file
 rm -f jarbler-*.gem
 
-rake test
+bundle exec rake test
 if [ $? -ne 0 ]; then
   echo "Tests failed."
   exit 1

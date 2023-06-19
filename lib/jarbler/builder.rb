@@ -121,9 +121,11 @@ module Jarbler
           # Copy the Gem from bundler/gems including the gemspec
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
         else  # Gem is from rubygems
-          # copy the Gem and gemspec separately
-          file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
-          file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
+          unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
+            # copy the Gem and gemspec separately
+            file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
+            file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
+          end
         end
       end
     end
