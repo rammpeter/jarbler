@@ -1,4 +1,5 @@
-# Jarbler
+[![# Jarbler](doc/images/jarbler_logo.png)]
+
 Pack a Ruby application into an executable jar file.
 
 Jarbler creates a self executing Java jar file containing a Ruby application and all its Gem dependencies.
