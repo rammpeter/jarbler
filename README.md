@@ -1,4 +1,4 @@
-[![# Jarbler](doc/images/jarbler_logo.png)]
+![# Jarbler](doc/images/jarbler_logo.png)
 
 Pack a Ruby application into an executable jar file.
 
