@@ -40,6 +40,8 @@ jobs:
       run: |
         gem install bundler
         bundle install
+        bundle --version
+        which bundler
         bundle exec rake test
 
   build:
