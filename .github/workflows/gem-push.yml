@@ -39,9 +39,12 @@ jobs:
         DEBUG: true
       run: |
         gem install bundler
-        bundle install
         bundle --version
         which bundler
+        gem update bundler
+        bundle --version
+        which bundler
+        bundle install
         bundle exec rake test
 
   build:
