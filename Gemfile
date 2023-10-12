@@ -8,9 +8,10 @@ gemspec
 # gem "rake", "~> 13.0"
 gem "rake"
 
-group(:development) do
-  gem 'rdoc'
-end
+# suspend rdoc due to error "NameError: cannot load (ext) (org.jruby.ext.psych.PsychLibrary)"o
+# group(:development) do
+#   gem 'rdoc'
+# end
 
 group(:test)  do
   gem 'minitest'
