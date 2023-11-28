@@ -94,6 +94,7 @@ jobs:
         else
           echo "RELEASE=$JARBLER_RELEASE does not exist on rubygems.org yet"
           echo "Manual execution of 'gem push jarbler-${JARBLER_RELEASE}.gem' required! This will fix the CI at next run"
+          echo "Download the release from Github and execute 'gem push jarbler-${JARBLER_RELEASE}.gem'"
           exit 1
           # rdoc --all --ri --op doc
           # gem push *.gem
