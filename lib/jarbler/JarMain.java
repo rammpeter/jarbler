@@ -33,7 +33,6 @@ import java.security.ProtectionDomain;
 class JarMain {
 
     // executed by java -jar <jar file name>
-    // No arguments are passed
     public static void main(String[] args) {
         debug("Start java process in jar file "+jar_file_name());
         debug("JVM: "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" "+System.getProperty("java.vm.version")+" "+System.getProperty("java.home"));
