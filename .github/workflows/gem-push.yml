@@ -38,7 +38,8 @@ jobs:
       env:
         DEBUG: true
       run: |
-        gem install bundler
+        # Use the last version of bundler that supports Ruby < 3.0
+        gem install bundler -v 2.4.22
         bundle --version
         which bundler
         gem update bundler
