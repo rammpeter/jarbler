@@ -209,7 +209,7 @@ class JarMain {
         return destFile;
     } catch (IOException exception) {
         System.out.println("JarMain.newFile: Error '"+ exception.getMessage() + "' while creating new file: '" + zipEntry.getName() + "' in dir '" + destinationDir.getName() + "'");
-        System.out.println("Full target dir name is: " + destDirPath);
+        System.out.println("Full target dir name is: " + destinationDir.getCanonicalPath());
         // Rethrow the exception
         throw exception;
         }
