@@ -187,7 +187,16 @@ class JarMain {
         zis.close();
     }
 
+    /**
+     * Create a new file with the given parent and name.
+     *
+     * @param destinationDir The parent directory.
+     * @param zipEntry The zip entry with name of the new file.
+     * @return The new File.
+     * @throws IOException If an I/O error occurs.
+     */
     private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
+    try {
         File destFile = new File(destinationDir, zipEntry.getName());
 
         String destDirPath = destinationDir.getCanonicalPath();
@@ -198,6 +207,13 @@ class JarMain {
         }
 
         return destFile;
+    } catch (IOException exception) {
+        System.out.println("JarMain.newFile: Error '"+ exception.getMessage() + "' while creating new file: '" + zipEntry.getName() + "' in dir '" + destinationDir.getName() + "'");
+        System.out.println("Full target dir name is: " + destinationDir.getCanonicalPath());
+        // Rethrow the exception
+        throw exception;
+        }
+
     }
 
     private static void debug(String msg) {
