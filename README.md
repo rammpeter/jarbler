@@ -50,7 +50,7 @@ To create a template config file with information about all the supported config
 
     $ jarble config
 
-The default configuration if focused on Ruby on Rails applications.<br>
+The default configuration is focused on Ruby on Rails applications.<br>
 
 ### Configuration options
 | Option            | Default value                                                                  | Description                                                         |
