@@ -18,6 +18,7 @@ class BuilderTest < Minitest::Test
     debug "##### End test #{self.class.name}::#{self.name}"
   end
 
+  # Check the right jar file name
   def test_jar_name
     in_temp_dir do
       Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'")
@@ -35,7 +36,7 @@ class BuilderTest < Minitest::Test
         Jarbler::Config.new.write_config_file("config.jruby_version = '9.2.4.0'")
         @builder.build_jar
         assert_jar_file(Dir.pwd) do
-          assert File.exist?("jruby-core-9.2.4.0-complete.jar"), "jRuby version core file should exist"
+          assert File.exist?("jruby-core-9.2.4.0-complete.jar"), "JRuby version core file should exist"
         end
       end
     end
@@ -44,7 +45,7 @@ class BuilderTest < Minitest::Test
         File.open('.ruby-version', 'w') { |file| file.write("jruby-9.2.3.0") }
         @builder.build_jar
         assert_jar_file(Dir.pwd) do
-          assert File.exist?("jruby-core-9.2.3.0-complete.jar"), "jRuby version core file should exist"
+          assert File.exist?("jruby-core-9.2.3.0-complete.jar"), "JRuby version core file should exist"
         end
       end
     end
@@ -132,6 +133,55 @@ class BuilderTest < Minitest::Test
     end
   end
 
+  # test if jar file is created of compiled .class files and executes well
+  def test_compiled
+    if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
+      in_temp_dir do
+        # Create ruby files for execution in jar file
+        File.open('test_outer.rb', 'w') do |file|
+          file.write("\
+# Add the current directory to the load path
+$LOAD_PATH.unshift __dir__
+require 'test_inner'
+puts 'test_outer running'
+TestInner.new.test_inner
+")
+        end
+        File.open('test_inner.rb', 'w') do |file|
+          file.write("\
+require 'nokogiri'
+class TestInner
+  def test_inner
+    puts 'test_inner running'
+    Nokogiri::XML('<x>Hugo</x>').xpath('//x').each do |x|
+      puts x.text
+    end
+  end
+end
+")
+        end
+
+        Jarbler::Config.new.write_config_file([
+                                                "config.compile_ruby_files = true",
+                                                "config.executable = 'test_outer.rb'",
+                                                "config.includes << 'test_outer.rb'",
+                                                "config.includes << 'test_inner.rb'"
+                                              ])
+        with_prepared_gemfile("gem 'nokogiri'") do
+          @builder.build_jar
+          assert_jar_file(Dir.pwd)
+          output = `java -jar #{Jarbler::Config.create.jar_name}`
+          # Ensure that the output contains the expected strings
+          assert output.include?('test_outer running'), "Output should contain 'test_outer running' but is:\n#{output}"
+          assert output.include?('test_inner running'), "Output should contain 'test_inner running' but is:\n#{output}"
+          assert output.include?('Hugo'), "Output should contain 'Hugo' but is:\n#{output}"
+        end
+      end
+    else
+      skip "test_compiled is executed only with JRuby"
+    end
+  end
+
   private
   # Prepare Gemfiles in temporary test dir and install gems
   # @param additional_gem_file_lines [Array<String>] additional gemfile lines
@@ -205,7 +255,12 @@ class BuilderTest < Minitest::Test
         # Ensure that included files are in jar file if they exist in original app root
         config.includes.each do |include|
           if File.exist?("#{app_root}/#{include}")  # File exists in original source
-            assert File.exist?("app_root/#{include}"), "File app_root/#{include} should be in jar file"
+            if config.compile_ruby_files && File.extname(include) == '.rb'
+              class_file = include.sub(/\.rb$/, '.class')
+              assert File.exist?("app_root/#{class_file}"), "File app_root/#{class_file} should be in jar file"
+            else
+              assert File.exist?("app_root/#{include}"), "File app_root/#{include} should be in jar file"
+            end
           end
         end
         yield if block_given?

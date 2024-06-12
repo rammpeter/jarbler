@@ -87,6 +87,13 @@ class JarMain {
             executable = prop.getProperty("jarbler.executable");
             executable_params = prop.getProperty("jarbler.executable_params");
 
+            Boolean compile_ruby_files = Boolean.parseBoolean(prop.getProperty("jarbler.compile_ruby_files", "false"));
+            if (compile_ruby_files) {
+              debug("Set system property jruby.aot.loadClasses = true");
+              // ensure that .class files are loaded at require time if rb files are not present
+              System.setProperty("jruby.aot.loadClasses", "true");
+            }
+
             // throw exception if executable is null
             if (executable == null) {
                 throw new RuntimeException("Property 'executable' definition missing in jarbler.properties");
@@ -129,12 +136,12 @@ class JarMain {
                 }
             }
 
-            debug("jRuby program starts with the following arguments: ");
+            debug("JRuby program starts with the following arguments: ");
             for (String arg : mainArgs) {
                 debug(" - " + arg);
             }
 
-            debug("jRuby set property 'user.dir' to '" + app_root + "'");
+            debug("JRuby set property 'user.dir' to '" + app_root + "'");
             System.setProperty("user.dir", app_root);
             // call the method org.jruby.Main.main
             debug("Calling org.jruby.Main.main with: "+ mainArgs);

@@ -3,7 +3,7 @@ require 'json'
 
 module Jarbler
   class Config
-    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params
+    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files
 
     CONFIG_FILE = 'config/jarble.rb'
     # create instance of Config class with defaults or from config file
@@ -19,10 +19,15 @@ module Jarbler
         config = Config.new
       end
       config.define_jruby_version
+      # Replace .rb with .class if compile_ruby_files is true
+      config.executable = config.executable.sub(/\.rb$/, '.class') if config.compile_ruby_files
+
+      config.validate_values
       config
     end
 
     def initialize
+      @compile_ruby_files = false
       @jar_name = File.basename(Dir.pwd) + '.jar'
       @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
@@ -36,6 +41,10 @@ module Jarbler
     # Generate the template config file based on default values
     def create_config_file
       write_config_file("\
+# Compile the ruby files of the project to Java .class files with JRuby's ahead-of-time compiler
+# the original ruby files are not included in the jar file, so source code is not visible
+# config.compile_ruby_files = #{compile_ruby_files}
+
 # Name of the generated jar file
 # config.jar_name = '#{jar_name}'
 
@@ -47,9 +56,9 @@ module Jarbler
 # config.excludes = #{excludes}
 # config.excludes << 'additional'
 
-# Use certail jRuby version
+# Use certain JRuby version
 # if not set (nil) then the version defined in .ruby-version
-# if not jRuby version defined here or in .ruby-version then the latest available jRuby version is used
+# if not JRuby version defined here or in .ruby-version then the latest available JRuby version is used
 # config.jruby_version = '9.2.3.0'
 # config.jruby_version = nil
 
@@ -83,15 +92,15 @@ module Jarbler
       puts "Jarbler: Created config file #{Dir.pwd}/#{CONFIG_FILE}"
     end
 
-    # define jRuby version if not set in config file
+    # define JRuby version if not set in config file
     def define_jruby_version
       unless @jruby_version # not defined in config file
         if File.exist?('.ruby-version')
           # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
           self.jruby_version = File.read('.ruby-version')[6..20].strip
-          debug "jRuby version from .ruby-version file: #{jruby_version}"
+          debug "JRuby version from .ruby-version file: #{jruby_version}"
         else
-          # no .ruby-version file, use jRuby version of the latest Gem
+          # no .ruby-version file, use JRuby version of the latest Gem
           # Fetch the gem specification from Rubygems.org
           # search for the gem and get the JSON response
           response = Gem::SpecFetcher.fetcher.search_for_dependency(Gem::Dependency.new('jruby-jars'))
@@ -105,13 +114,23 @@ module Jarbler
           #jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
           #raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
           #self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
-          debug "jRuby version from latest jruby-jars gem: #{jruby_version}"
+          debug "JRuby version from latest jruby-jars gem: #{jruby_version}"
         end
       end
     end
 
     def debug(msg)
       puts msg if ENV['DEBUG']
+    end
+
+    def validate_values
+      raise "Invalid config value for jar name: #{jar_name}" unless jar_name =~ /\w+/
+      raise "Invalid config value for executable: #{executable}" unless executable =~ /\w+/
+      raise "Invalid config value for executable params: #{executable_params}" unless executable_params.is_a?(Array)
+      raise "Invalid config value for includes: #{includes}" unless includes.is_a?(Array)
+      raise "Invalid config value for excludes: #{excludes}" unless excludes.is_a?(Array)
+      raise "Invalid config value for compile_ruby_files: #{compile_ruby_files}" unless [true, false].include?(compile_ruby_files)
+      raise "compile_ruby_files = true is supported only with JRuby! Current runtime is '#{RUBY_ENGINE}'" if compile_ruby_files && (defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby')
     end
   end
 end
