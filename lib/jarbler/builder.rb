@@ -49,6 +49,7 @@ module Jarbler
             java_executable_params += "#{param} "
           end
           file.write("jarbler.executable_params=#{java_executable_params.strip}\n")
+          file.write("jarbler.compile_ruby_files=#{config.compile_ruby_files}\n")
         end
 
         # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
@@ -61,6 +62,8 @@ module Jarbler
             debug "Not removing #{to_remove} from staging directory, because it does not exist"
           end
         end
+
+        compile_ruby_files if config.compile_ruby_files
 
         exec_command "jar cfm #{config.jar_name} Manifest.txt *" # create the jar file
 
@@ -202,7 +205,7 @@ module Jarbler
 
     # Copy the jruby-jars to the staging directory
     # @param [String] staging_dir Path to the staging directory
-    # @return [String] the minor ruby version of the jRuby jars with patch level set to 0
+    # @return [String] the minor ruby version of the JRuby jars with patch level set to 0
     def copy_jruby_jars_to_staging(staging_dir)
 
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
@@ -211,7 +214,7 @@ module Jarbler
       raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
 
       jruby_jars_location = installed[0]&.full_gem_path
-      debug "jRuby jars installed at: #{jruby_jars_location}"
+      debug "JRuby jars installed at: #{jruby_jars_location}"
 
       # Get the location of the jruby-jars gem
       # spec = Gem::Specification.find_by_name('jruby-jars', config.jruby_version)
@@ -220,14 +223,14 @@ module Jarbler
       file_utils_copy("#{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar", staging_dir)
       file_utils_copy("#{jruby_jars_location}/lib/jruby-stdlib-#{config.jruby_version}.jar", staging_dir)
 
-      # Get the according Ruby version for the current jRuby version
+      # Get the according Ruby version for the current JRuby version
       lines = exec_command "java -cp #{jruby_jars_location}/lib/jruby-core-#{config.jruby_version}-complete.jar org.jruby.Main --version"
       match_result = lines.match(/\(.*\)/)
-      raise "Could not determine Ruby version for jRuby #{config.jruby_version} in following output:\n#{lines}" unless match_result
+      raise "Could not determine Ruby version for JRuby #{config.jruby_version} in following output:\n#{lines}" unless match_result
       ruby_version = match_result[0].tr('()', '')
-      debug "Corresponding Ruby version for jRuby (#{config.jruby_version}): #{ruby_version}"
+      debug "Corresponding Ruby version for JRuby (#{config.jruby_version}): #{ruby_version}"
       ruby_minor_version = ruby_version.split('.')[0..1].join('.') + '.0'
-      debug "Corresponding Ruby minor version for jRuby (#{config.jruby_version}): #{ruby_minor_version}"
+      debug "Corresponding Ruby minor version for JRuby (#{config.jruby_version}): #{ruby_minor_version}"
       ruby_minor_version
     end
 
@@ -255,6 +258,25 @@ module Jarbler
       puts "Error copying #{source} to #{destination}"
       raise
     end
-  end
 
+    # Compile all Ruby files in the current directory (staging directory)
+    def compile_ruby_files
+      require 'jruby/jrubyc'
+
+      puts "Compiling all .rb files to .class files"
+      # Inform if used JRuby version is different from the intended runtime JRuby version
+      if JRUBY_VERSION != config.jruby_version
+        puts "Compiling .rb files to .class is done with JRuby version #{JRUBY_VERSION}, but intended runtime JRuby version for jar file  is #{config.jruby_version}"
+      end
+
+      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ }
+      ruby_files.each do |ruby_file|
+        debug "Compile Ruby file #{ruby_file}"
+        full_file_name = File.join(Dir.pwd, ruby_file)                          # full name including path is required by the JRuby compiler
+        status = JRuby::Compiler::compile_argv([full_file_name])                # compile the Ruby file
+        raise "Error compiling Ruby file #{ruby_file}" if status != 0
+        File.delete(full_file_name)                                             # remove the original Ruby file to ensure that the compiled class file is used
+      end
+    end
+  end
 end

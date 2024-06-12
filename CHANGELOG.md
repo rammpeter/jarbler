@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [0.2.0] - 2024-06-12
+
+- Add ahead of time compilation support for JRuby
+
 ## [0.1.6] - 2023-06-19
 
 - Bugfix: Do not clone default gems, because they are already included in the jruby jars standard library
