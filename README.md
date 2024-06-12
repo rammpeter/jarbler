@@ -53,15 +53,15 @@ To create a template config file with information about all the supported config
 The default configuration is focused on Ruby on Rails applications.<br>
 
 ### Configuration options
-| Option            | Default value                                                                  | Description                                                                                                                                        |
-|-------------------|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| compile_ruby_files| false                                                                          | Ahead of time compilation of all .rb files of application and Gem dependencies to .class files. Only store .class files in jar.                    |
-| executable        | "bin/rails"                                                                    | The ruby start file to run at execution of jar file. File extension .class is used automatically if start file is .rb and AOT compilation is used. |
-| executable_params | ["server", "-e", "production", "-p", "8080"]                                   | Command line parameters to be used for the ruby executable                                                                                         |
-| excludes          | ["tmp/cache", "tmp/pids", ...] (see generated template file for whole content) | The files and dirs of the project to exlude from the include option                                                                                |
-| includes          | ["app", "bin", "config", ...] (see generated template file for whole content)  | The files and dirs of the project to include in the jar file                                                                                       |
-| jar_name          | &lt; Name of project dir &gt;.jar                                              | The name of the generated jar file                                                                                                                 |
-| jruby_version     | The current most recent JRuby version                                          | The version of the JRuby runtime to use                                                                                                            |
+| Option            | Default value                                                                  | Description                                                                                                                                             |
+|-------------------|--------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| compile_ruby_files| false                                                                          | Ahead of time compilation of all .rb files of application and Gem dependencies to .class files. Only store .class files in jar. Requires JRuby runtime. |
+| executable        | "bin/rails"                                                                    | The ruby start file to run at execution of jar file. File extension .class is used automatically if start file is .rb and AOT compilation is used.      |
+| executable_params | ["server", "-e", "production", "-p", "8080"]                                   | Command line parameters to be used for the ruby executable                                                                                              |
+| excludes          | ["tmp/cache", "tmp/pids", ...] (see generated template file for whole content) | The files and dirs of the project to exlude from the include option                                                                                     |
+| includes          | ["app", "bin", "config", ...] (see generated template file for whole content)  | The files and dirs of the project to include in the jar file                                                                                            |
+| jar_name          | &lt; Name of project dir &gt;.jar                                              | The name of the generated jar file                                                                                                                      |
+| jruby_version     | The current most recent JRuby version                                          | The version of the JRuby runtime to use                                                                                                                 |
 
 
 ## Troubleshooting
