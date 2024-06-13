@@ -23,6 +23,24 @@ module Jarbler
       config.executable = config.executable.sub(/\.rb$/, '.class') if config.compile_ruby_files
 
       config.validate_values
+
+      puts ""
+      if File.exist?(CONFIG_FILE)
+        puts "Configuration loaded from file #{File.join(Dir.pwd, CONFIG_FILE)}"
+      else
+        puts "No configuration file found at #{File.join(Dir.pwd, CONFIG_FILE)}. Using default values."
+      end
+      puts "Used configuration values are:"
+      puts "  compile_ruby_files:       #{config.compile_ruby_files}" if config.compile_ruby_files
+      puts "  excludes:                 #{config.excludes}" unless config.excludes.empty?
+      puts "  excludes_from_compile:    #{config.excludes_from_compile}" unless config.excludes_from_compile.empty?
+      puts "  executable:               #{config.executable}"
+      puts "  executable_params:        #{config.executable_params}" unless config.executable_params.empty?
+      puts "  include_gems_to_compile:  #{config.include_gems_to_compile}" if config.include_gems_to_compile
+      puts "  includes:                 #{config.includes}" unless config.includes.empty?
+      puts "  jar_name:                 #{config.jar_name}"
+      puts "  jruby_version:            #{config.jruby_version}"
+      puts ""
       config
     end
 
