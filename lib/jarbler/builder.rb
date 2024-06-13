@@ -275,6 +275,11 @@ module Jarbler
         ruby_files = ruby_files.select { |f| !(f =~ /\.#{File::SEPARATOR}gems#{File::SEPARATOR}/) } # Exclude ./gems/* directories from compiling
       end
 
+      # Exclude named files or directories from compiling
+      config.excludes_from_compile.each do |exclude|
+        ruby_files = ruby_files.select { |f| !(f =~ /\.#{File::SEPARATOR}app_root#{File::SEPARATOR}#{exclude}/) }
+      end
+
       ruby_files.each do |ruby_file|
         debug "Compile Ruby file #{ruby_file}"
         full_file_name = File.join(Dir.pwd, ruby_file)                          # full name including path is required by the JRuby compiler

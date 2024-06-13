@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [0.2.2] - 2024-06-13
+
+- Exclude certain dirs or files from compilation with 'excludes_from_compile' option in config file
+
 ## [0.2.1] - 2024-06-13
 
 - Ruby files remain originally in jar if compile fails for a single file. 

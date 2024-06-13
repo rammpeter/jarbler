@@ -170,7 +170,10 @@ end
                                               ])
         with_prepared_gemfile("gem 'nokogiri'") do
           @builder.build_jar
-          assert_jar_file(Dir.pwd)
+          assert_jar_file(Dir.pwd) do
+            assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
+            assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
+          end
           output = `java -jar #{Jarbler::Config.create.jar_name}`
           # Ensure that the output contains the expected strings
           assert output.include?('test_outer running'), "Output should contain 'test_outer running' but is:\n#{output}"
