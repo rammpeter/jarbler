@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [0.2.1] - 2024-06-13
+
+- Ruby files remain originally in jar if compile fails for a single file. 
+- Gems are compiled only if include_gems_to_compile=true
+
 ## [0.2.0] - 2024-06-12
 
 - Add ahead of time compilation support for JRuby
