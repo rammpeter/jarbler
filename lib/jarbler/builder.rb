@@ -269,13 +269,26 @@ module Jarbler
         puts "Compiling .rb files to .class is done with JRuby version #{JRUBY_VERSION}, but intended runtime JRuby version for jar file  is #{config.jruby_version}"
       end
 
-      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ }
+      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ }                   # find all Ruby files in the current directory
+
+      if !config.include_gems_to_compile
+        ruby_files = ruby_files.select { |f| !(f =~ /\.#{File::SEPARATOR}gems#{File::SEPARATOR}/) } # Exclude ./gems/* directories from compiling
+      end
+
       ruby_files.each do |ruby_file|
         debug "Compile Ruby file #{ruby_file}"
         full_file_name = File.join(Dir.pwd, ruby_file)                          # full name including path is required by the JRuby compiler
-        status = JRuby::Compiler::compile_argv([full_file_name])                # compile the Ruby file
-        raise "Error compiling Ruby file #{ruby_file}" if status != 0
-        File.delete(full_file_name)                                             # remove the original Ruby file to ensure that the compiled class file is used
+        begin
+          status = JRuby::Compiler::compile_argv([full_file_name])              # compile the Ruby file
+          if status == 0
+            File.delete(full_file_name)                                         # remove the original Ruby file to ensure that the compiled class file is used
+          else
+            raise "Return status != 0"
+          end
+        rescue Exception => e
+          puts "Error compiling Ruby file '#{ruby_file}': #{e.class}:#{e.message}"
+          puts "'#{ruby_file}' is not compiled and will be included in the jar file as original Ruby file"
+        end
       end
     end
   end

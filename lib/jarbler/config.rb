@@ -3,7 +3,7 @@ require 'json'
 
 module Jarbler
   class Config
-    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files
+    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :include_gems_to_compile
 
     CONFIG_FILE = 'config/jarble.rb'
     # create instance of Config class with defaults or from config file
@@ -28,12 +28,13 @@ module Jarbler
 
     def initialize
       @compile_ruby_files = false
-      @jar_name = File.basename(Dir.pwd) + '.jar'
-      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
-      @jruby_version = nil  # determined automatically at runtime
       @executable = 'bin/rails'
       @executable_params = %w(server -e production -p 8080)
+      @include_gems_to_compile = false
+      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
+      @jar_name = File.basename(Dir.pwd) + '.jar'
+      @jruby_version = nil  # determined automatically at runtime
       # execute additional block if given
       yield self if block_given?
     end
@@ -41,10 +42,6 @@ module Jarbler
     # Generate the template config file based on default values
     def create_config_file
       write_config_file("\
-# Compile the ruby files of the project to Java .class files with JRuby's ahead-of-time compiler
-# the original ruby files are not included in the jar file, so source code is not visible
-# config.compile_ruby_files = #{compile_ruby_files}
-
 # Name of the generated jar file
 # config.jar_name = '#{jar_name}'
 
@@ -67,6 +64,14 @@ module Jarbler
 
 # Additional command line parameters for the Ruby executable
 # config.executable_params = #{executable_params}
+
+# Compile the ruby files of the project to Java .class files with JRuby's ahead-of-time compiler?
+# the original ruby files are not included in the jar file, so source code is not visible
+# config.compile_ruby_files = #{compile_ruby_files}
+
+# Compile also the .rb files of the gems of the project to Java .class files?
+# config.include_gems_to_compile = #{include_gems_to_compile}
+
       ".split("\n"))
     end
 
@@ -131,6 +136,7 @@ module Jarbler
       raise "Invalid config value for excludes: #{excludes}" unless excludes.is_a?(Array)
       raise "Invalid config value for compile_ruby_files: #{compile_ruby_files}" unless [true, false].include?(compile_ruby_files)
       raise "compile_ruby_files = true is supported only with JRuby! Current runtime is '#{RUBY_ENGINE}'" if compile_ruby_files && (defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby')
+      raise "include_gems_to_compile = true is supported only if compile_ruby_files = true!" if include_gems_to_compile && !compile_ruby_files
     end
   end
 end
