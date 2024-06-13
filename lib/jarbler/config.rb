@@ -3,7 +3,7 @@ require 'json'
 
 module Jarbler
   class Config
-    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :include_gems_to_compile
+    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :include_gems_to_compile, :excludes_from_compile
 
     CONFIG_FILE = 'config/jarble.rb'
     # create instance of Config class with defaults or from config file
@@ -29,6 +29,7 @@ module Jarbler
     def initialize
       @compile_ruby_files = false
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
+      @excludes_from_compile = %w(config)
       @executable = 'bin/rails'
       @executable_params = %w(server -e production -p 8080)
       @include_gems_to_compile = false
@@ -71,6 +72,9 @@ module Jarbler
 
 # Compile also the .rb files of the gems of the project to Java .class files?
 # config.include_gems_to_compile = #{include_gems_to_compile}
+
+# Directories or files to exclude from the compilation if compile_ruby_files = true
+# config.excludes_from_compile = #{excludes_from_compile}
 
       ".split("\n"))
     end
@@ -137,6 +141,7 @@ module Jarbler
       raise "Invalid config value for compile_ruby_files: #{compile_ruby_files}" unless [true, false].include?(compile_ruby_files)
       raise "compile_ruby_files = true is supported only with JRuby! Current runtime is '#{RUBY_ENGINE}'" if compile_ruby_files && (defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby')
       raise "include_gems_to_compile = true is supported only if compile_ruby_files = true!" if include_gems_to_compile && !compile_ruby_files
+      raise "Invalid config value for excludes_from_compile: #{excludes_from_compile}" unless excludes_from_compile.is_a?(Array)
     end
   end
 end
