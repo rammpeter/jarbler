@@ -271,13 +271,9 @@ module Jarbler
 
       ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ }                   # find all Ruby files in the current directory
 
-      if !config.include_gems_to_compile
-        ruby_files = ruby_files.select { |f| !(f =~ /\.#{File::SEPARATOR}gems#{File::SEPARATOR}/) } # Exclude ./gems/* directories from compiling
-      end
-
       # Exclude named files or directories from compiling
       config.excludes_from_compile.each do |exclude|
-        ruby_files = ruby_files.select { |f| !(f =~ /\.#{File::SEPARATOR}app_root#{File::SEPARATOR}#{exclude}/) }
+        ruby_files = ruby_files.select { |f| !(f =~ /\.#{File::SEPARATOR}#{exclude}/) }
       end
 
       ruby_files.each do |ruby_file|

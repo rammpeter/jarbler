@@ -3,7 +3,7 @@ require 'json'
 
 module Jarbler
   class Config
-    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :include_gems_to_compile, :excludes_from_compile
+    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :excludes_from_compile
 
     CONFIG_FILE = 'config/jarble.rb'
     # create instance of Config class with defaults or from config file
@@ -36,7 +36,6 @@ module Jarbler
       puts "  excludes_from_compile:    #{config.excludes_from_compile}" unless config.excludes_from_compile.empty?
       puts "  executable:               #{config.executable}"
       puts "  executable_params:        #{config.executable_params}" unless config.executable_params.empty?
-      puts "  include_gems_to_compile:  #{config.include_gems_to_compile}" if config.include_gems_to_compile
       puts "  includes:                 #{config.includes}" unless config.includes.empty?
       puts "  jar_name:                 #{config.jar_name}"
       puts "  jruby_version:            #{config.jruby_version}"
@@ -47,10 +46,9 @@ module Jarbler
     def initialize
       @compile_ruby_files = false
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
-      @excludes_from_compile = %w(config)
+      @excludes_from_compile = []
       @executable = 'bin/rails'
       @executable_params = %w(server -e production -p 8080)
-      @include_gems_to_compile = false
       @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
       @jar_name = File.basename(Dir.pwd) + '.jar'
       @jruby_version = nil  # determined automatically at runtime
@@ -88,10 +86,8 @@ module Jarbler
 # the original ruby files are not included in the jar file, so source code is not visible
 # config.compile_ruby_files = #{compile_ruby_files}
 
-# Compile also the .rb files of the gems of the project to Java .class files?
-# config.include_gems_to_compile = #{include_gems_to_compile}
-
 # Directories or files to exclude from the compilation if compile_ruby_files = true
+# The paths map to the final location of files or dirs in the jar file, e.g. config.excludes_from_compile = ['gems', 'app_root/app/models']
 # config.excludes_from_compile = #{excludes_from_compile}
 
       ".split("\n"))
@@ -150,6 +146,11 @@ module Jarbler
       puts msg if ENV['DEBUG']
     end
 
+    # Avoid exception if using depprecated config attribute include_gems_to_compile
+    def include_gems_to_compile=(_value)
+      puts "Configuration attribute 'include_gems_to_compile' is deprecated. Use 'excludes_from_compile = [\”gems\”]' instead."
+    end
+
     def validate_values
       raise "Invalid config value for jar name: #{jar_name}" unless jar_name =~ /\w+/
       raise "Invalid config value for executable: #{executable}" unless executable =~ /\w+/
@@ -158,7 +159,6 @@ module Jarbler
       raise "Invalid config value for excludes: #{excludes}" unless excludes.is_a?(Array)
       raise "Invalid config value for compile_ruby_files: #{compile_ruby_files}" unless [true, false].include?(compile_ruby_files)
       raise "compile_ruby_files = true is supported only with JRuby! Current runtime is '#{RUBY_ENGINE}'" if compile_ruby_files && (defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby')
-      raise "include_gems_to_compile = true is supported only if compile_ruby_files = true!" if include_gems_to_compile && !compile_ruby_files
       raise "Invalid config value for excludes_from_compile: #{excludes_from_compile}" unless excludes_from_compile.is_a?(Array)
     end
   end

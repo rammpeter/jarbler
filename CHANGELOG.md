@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [0.3.0] - 2024-06-18
+
+- excludes_from_compile specifies paths as the location in the jar file
+- Desupport of configuration attribute include_gems_to_compile
+
 ## [0.2.3] - 2024-06-13
 
 - Show used configuration values in log output

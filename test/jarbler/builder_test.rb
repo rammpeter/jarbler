@@ -163,7 +163,7 @@ end
 
         Jarbler::Config.new.write_config_file([
                                                 "config.compile_ruby_files = true",
-                                                "config.include_gems_to_compile = true",
+                                                "config.excludes_from_compile = ['app_root/config/jarble.rb']",
                                                 "config.executable = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
                                                 "config.includes << 'test_outer.rb'",
                                                 "config.includes << 'test_inner.rb'"
