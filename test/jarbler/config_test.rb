@@ -60,4 +60,8 @@ class ConfigTest < Minitest::Test
     end
   end
 
+  def test_deprecated_attributes
+    @config.include_gems_to_compile = true  # deprecated attribute should not raise an error if used in config file
+  end
+
 end
