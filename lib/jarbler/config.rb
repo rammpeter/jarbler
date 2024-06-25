@@ -121,15 +121,16 @@ module Jarbler
         if File.exist?('.ruby-version')
           # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
           self.jruby_version = File.read('.ruby-version')[6..20].strip
-          debug "JRuby version from .ruby-version file: #{jruby_version}"
+          debug "Jarbler::Config.define_jruby_version: JRuby version from .ruby-version file: #{jruby_version}"
         else
           # no .ruby-version file, use JRuby version of the latest Gem
           # Fetch the gem specification from Rubygems.org
           # search for the gem and get the JSON response
           response = Gem::SpecFetcher.fetcher.search_for_dependency(Gem::Dependency.new('jruby-jars'))
+          debug("Jarbler::Config.define_jruby_version: Response from search_for_dependency = #{response.inspect}")
           # extract the versions from the response
           self.jruby_version = response&.first&.first&.first&.version&.to_s
-          raise "Unable to determine the latest available version of jruby-jars gem!\Rsponse = #{response.inspect}" unless self.jruby_version
+          raise "Unable to determine the latest available version of jruby-jars gem!\nResponse = #{response.inspect}" unless self.jruby_version
 
           #command = "gem search --remote jruby-jars"
           #lines = `#{command}`
@@ -137,7 +138,7 @@ module Jarbler
           #jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
           #raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
           #self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
-          debug "JRuby version from latest jruby-jars gem: #{jruby_version}"
+          debug "Jarbler::Config.define_jruby_version: JRuby version from latest jruby-jars gem: #{jruby_version}"
         end
       end
     end
