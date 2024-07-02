@@ -31,12 +31,12 @@ module Jarbler
         puts "No configuration file found at #{File.join(Dir.pwd, CONFIG_FILE)}. Using default values."
       end
       puts "Used configuration values are:"
-      puts "  compile_ruby_files:       #{config.compile_ruby_files}" if config.compile_ruby_files
-      puts "  excludes:                 #{config.excludes}" unless config.excludes.empty?
-      puts "  excludes_from_compile:    #{config.excludes_from_compile}" unless config.excludes_from_compile.empty?
+      puts "  compile_ruby_files:       #{config.compile_ruby_files}"
+      puts "  excludes:                 #{config.excludes}"
+      puts "  excludes_from_compile:    #{config.excludes_from_compile}"
       puts "  executable:               #{config.executable}"
-      puts "  executable_params:        #{config.executable_params}" unless config.executable_params.empty?
-      puts "  includes:                 #{config.includes}" unless config.includes.empty?
+      puts "  executable_params:        #{config.executable_params}"
+      puts "  includes:                 #{config.includes}"
       puts "  jar_name:                 #{config.jar_name}"
       puts "  jruby_version:            #{config.jruby_version}"
       puts ""
@@ -117,29 +117,39 @@ module Jarbler
 
     # define JRuby version if not set in config file
     def define_jruby_version
-      unless @jruby_version # not defined in config file
-        if File.exist?('.ruby-version')
-          # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
-          self.jruby_version = File.read('.ruby-version')[6..20].strip
-          debug "Jarbler::Config.define_jruby_version: JRuby version from .ruby-version file: #{jruby_version}"
+      if @jruby_version.nil? && File.exist?('.ruby-version')                    # not yet defined in config file but .ruby-version file exists
+        # read the file RAILS_ROOT/.ruby-version starting from char at position 6 to the end of the line
+        full_jruby_version_string = File.read('.ruby-version')
+        if full_jruby_version_string[0..5] == 'jruby-'
+          @jruby_version = full_jruby_version_string[6..20].strip
+          if @jruby_version =~ /\d+\.\d+\.\d+\.\d+/                        # check if the version is valid with four digits
+            debug "Jarbler::Config.define_jruby_version: JRuby version used from .ruby-version file: #{@jruby_version}"
+          else
+            debug "Jarbler::Config.define_jruby_version: Invalid JRuby version in .ruby-version file (not four digits delimited by dot): #{full_jruby_version_string}"
+            @jruby_version = nil
+          end
         else
-          # no .ruby-version file, use JRuby version of the latest Gem
-          # Fetch the gem specification from Rubygems.org
-          # search for the gem and get the JSON response
-          response = Gem::SpecFetcher.fetcher.search_for_dependency(Gem::Dependency.new('jruby-jars'))
-          debug("Jarbler::Config.define_jruby_version: Response from search_for_dependency = #{response.inspect}")
-          # extract the versions from the response
-          self.jruby_version = response&.first&.first&.first&.version&.to_s
-          raise "Unable to determine the latest available version of jruby-jars gem!\nResponse = #{response.inspect}" unless self.jruby_version
-
-          #command = "gem search --remote jruby-jars"
-          #lines = `#{command}`
-          #raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
-          #jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
-          #raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
-          #self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
-          debug "Jarbler::Config.define_jruby_version: JRuby version from latest jruby-jars gem: #{jruby_version}"
+          debug "Jarbler::Config.define_jruby_version: Version info from .ruby-version file not applicable: #{full_jruby_version_string}"
         end
+      end
+
+      if @jruby_version.nil?                                                    # not yet defined in config file and .ruby-version file
+        # no .ruby-version file to be used, use JRuby version of the latest Gem
+        # Fetch the gem specification from Rubygems.org
+        # search for the gem and get the JSON response
+        response = Gem::SpecFetcher.fetcher.search_for_dependency(Gem::Dependency.new('jruby-jars'))
+        debug("Jarbler::Config.define_jruby_version: Response from search_for_dependency = #{response.inspect}")
+        # extract the versions from the response
+        @jruby_version = response&.first&.first&.first&.version&.to_s
+        raise "Unable to determine the latest available version of jruby-jars gem!\nResponse = #{response.inspect}" unless @jruby_version
+
+        #command = "gem search --remote jruby-jars"
+        #lines = `#{command}`
+        #raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
+        #jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
+        #raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
+        #self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
+        debug "Jarbler::Config.define_jruby_version: JRuby version from latest jruby-jars gem: #{jruby_version}"
       end
     end
 
@@ -161,6 +171,7 @@ module Jarbler
       raise "Invalid config value for compile_ruby_files: #{compile_ruby_files}" unless [true, false].include?(compile_ruby_files)
       raise "compile_ruby_files = true is supported only with JRuby! Current runtime is '#{RUBY_ENGINE}'" if compile_ruby_files && (defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby')
       raise "Invalid config value for excludes_from_compile: #{excludes_from_compile}" unless excludes_from_compile.is_a?(Array)
+      raise "Invalid config value for jruby_version: #{jruby_version}" unless jruby_version.nil? || jruby_version =~ /\d+\.\d+\.\d+\.\d+/
     end
   end
 end
