@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [0.3.1] - 2024-07-02
+
+- Use file .ruby-version to define the JRuby version for the jar file only if .ruby-version contains a valid jRuby version
+
+
 ## [0.3.0] - 2024-06-18
 
 - excludes_from_compile specifies paths as the location in the jar file

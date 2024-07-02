@@ -52,10 +52,28 @@ class ConfigTest < Minitest::Test
         # Test value from rubygems.org
         config = Jarbler::Config.create
         assert config.jruby_version =~ /\d+\.\d+\.\d+\.\d+/
+        latest_jruby_version =  config.jruby_version                           # remember for later tests
         # Test value from config file
         Jarbler::Config.new.write_config_file("config.jruby_version = '3.3.3.0'")
         config = Jarbler::Config.create
         assert_equal config.jruby_version, '3.3.3.0'
+        File.delete(Jarbler::Config::CONFIG_FILE)
+
+        # Test value from .ruby-version
+        File.write('.ruby-version', 'jruby-9.2.4.0')
+        config = Jarbler::Config.create
+        assert_equal config.jruby_version, '9.2.4.0'
+
+        # Test value from .ruby-version is not a jruby version
+        File.write('.ruby-version', 'ruby-3.5.0')
+        config = Jarbler::Config.create
+        assert_equal config.jruby_version, latest_jruby_version
+
+        # Test value from .ruby-version is not a valid jruby version
+        File.write('.ruby-version', 'jruby-3.5.0')
+        config = Jarbler::Config.create
+        assert_equal config.jruby_version, latest_jruby_version
+
       end
     end
   end
