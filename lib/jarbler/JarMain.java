@@ -56,9 +56,12 @@ class JarMain {
                 jarPath = jarPath.substring(1); // remove the leading slash
             }
 
+            // get the absolute path of the jar file, especially if it contains spaces in Windows
+            String aboluteJarPath = new File(jarPath).getAbsolutePath();
+
             // extract the jarFile by unzipping it (not using the jar utility which may not be available)
-            System.out.println("Extracting files from "+jarPath+" to "+ newFolder.getAbsolutePath());
-            unzip(jarPath, newFolder.getAbsolutePath());
+            System.out.println("Extracting files from "+aboluteJarPath+" to "+ newFolder.getAbsolutePath());
+            unzip(aboluteJarPath, newFolder.getAbsolutePath());
 
             String app_root = newFolder.getAbsolutePath()+File.separator+"app_root";
 
