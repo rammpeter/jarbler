@@ -174,6 +174,14 @@ end
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
+          # ENV['DEBUG'] = 'true'
+          ENV.delete('BUNDLE_BIN_PATH')
+          ENV.delete('BUNDLE_GEMFILE')
+          ENV.delete('BUNDLER_SETUP')
+          ENV.delete('BUNDLER_VERSION')
+          ENV.delete('GEM_HOME')
+          ENV.delete('RUBYLIB')
+          ENV.delete('RUBYOPT')
           output = `java -jar #{Jarbler::Config.create.jar_name}`
           # Ensure that the output contains the expected strings
           assert output.include?('test_outer running'), "Output should contain 'test_outer running' but is:\n#{output}"
