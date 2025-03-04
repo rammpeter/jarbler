@@ -117,6 +117,7 @@ module Jarbler
       FileUtils.mkdir_p("#{gem_target_location}/extensions")
       FileUtils.mkdir_p("#{gem_target_location}/gems")
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
+      FileUtils.mkdir_p("#{gem_target_location}/bundler/bin")
       FileUtils.mkdir_p("#{gem_target_location}/bundler/gems")
 
       needed_gems = gem_dependencies  # get the full names of the dependencies
@@ -130,11 +131,17 @@ module Jarbler
         if spec.source.is_a?(Bundler::Source::Git)
           # Copy the Gem from bundler/gems including the gemspec
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
+          spec.executables.each do |executable|
+            file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bundler/bin")
+          end
         else  # Gem is from rubygems
           unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
             # copy the Gem and gemspec separately
             file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
             file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
+            spec.executables.each do |executable|
+              file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
+            end
           end
         end
       end
@@ -163,7 +170,7 @@ module Jarbler
           debug "Direct Gem dependency: #{lockfile_spec.full_name}"
           add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
-          debug "Gem #{gemfile_spec.name} not found in Gemfile.lock"
+          debug "Gem #{gemfile_spec.name} not found in specs: in Gemfile.lock"
         end
       end
       needed_gems.uniq.sort{|a,b| a[:full_name] <=> b[:full_name]}

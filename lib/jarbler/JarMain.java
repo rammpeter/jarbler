@@ -153,6 +153,10 @@ class JarMain {
             debug("JRuby set property 'jruby.gem.home' to '" + full_gem_home + "'");
             System.setProperty("jruby.gem.home", full_gem_home);
 
+            String full_gem_path = full_gem_home +  File.pathSeparator + full_gem_home + File.separator + "bundler" ;
+            debug("JRuby set property 'jruby.gem.path' to '" + full_gem_path + "'");
+            System.setProperty("jruby.gem.path", full_gem_path);
+
             debug("JRuby program starts with the following arguments: ");
             for (String arg : mainArgs) {
                 debug(" - " + arg);

@@ -60,30 +60,18 @@ class BuilderTest < Minitest::Test
           file.write("#!/usr/bin/env ruby\n")
           file.write("puts 'Starting application hugo'\n")
           file.write("puts 'hugo:' + ARGV.inspect\n")
-          file.write("begin\n")
-          file.write("  puts 'hugo:' + 'require bundler'\n")
-          file.write("  require 'bundler'\n")
-          file.write("  puts 'hugo:' + 'require Bundler.setup'\n")
-          file.write("  Bundler.setup\n")
-          file.write("  require 'jarbler/github_gem_test'\n")
-          file.write("  puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
-          file.write("rescue Exception => e\n")
-          file.write("  puts 'Exception in test executable hugo'\n")
-          file.write("  puts e.message\n")
-          file.write("  puts e.backtrace.join(\"\n\")\n")
-          file.write("  raise\n")
-          file.write("end\n")
         end
         @builder.build_jar
         assert_jar_file(Dir.pwd)
         debug "Now executing the jar file"
+        ENV['debug'] = 'true'
         remove_gem_env
         stdout, stderr, status = Open3.capture3("java -jar hugo.jar -c -d")
         restore_gem_env
-        debug "After executing the jar file"
+        debug "After executing the jar file\nstdout:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
-        assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\nstderr:\n#{stderr}"
-        assert !stdout.lines.select{|s| s == "SUCCESS\n" }.empty?, "Response should contain the line SUCCESS but is:\n#{stdout}\nstderr:\n#{stderr}"
+        assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+        assert status.success?, "Response status should be success but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
       end
     end
   end
@@ -147,6 +135,8 @@ puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
 puts 'GEM_HOME is ' + ENV['GEM_HOME'].inspect
 puts 'GEM_PATH is ' + ENV['GEM_PATH'].inspect
 require 'test_inner'
+puts 'after require GEM_HOME is ' + ENV['GEM_HOME'].inspect
+puts 'after require GEM_PATH is ' + ENV['GEM_PATH'].inspect
 puts 'test_outer running'
 TestInner.new.test_inner
 ")
