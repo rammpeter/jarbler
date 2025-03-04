@@ -314,7 +314,7 @@ class JarMain {
             }
         });
 
-        if (!errorSummary.isEmpty()){
+        if (!errorSummary.toString().isEmpty()){
             System.err.println("The follwing environment variables may influence the execution of the packaged Ruby code.");
             System.err.println("Please remove this environment entries before the execution of the jar file if they cause errors.");
             System.err.println(errorSummary);
