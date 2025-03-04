@@ -144,6 +144,8 @@ class BuilderTest < Minitest::Test
 # Add the current directory to the load path
 $LOAD_PATH.unshift __dir__
 puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
+puts 'GEM_HOME is ' + ENV['GEM_HOME'].inspect
+puts 'GEM_PATH is ' + ENV['GEM_PATH'].inspect
 require 'test_inner'
 puts 'test_outer running'
 TestInner.new.test_inner
@@ -178,14 +180,9 @@ end
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
           ENV['DEBUG'] = 'true'
-          ENV.delete('BUNDLE_BIN_PATH')
-          ENV.delete('BUNDLE_GEMFILE')
-          ENV.delete('BUNDLER_SETUP')
-          ENV.delete('BUNDLER_VERSION')
-          ENV.delete('GEM_HOME')
-          ENV.delete('RUBYLIB')
-          ENV.delete('RUBYOPT')
+          remove_gem_env
           stdout, stderr, status = Open3.capture3("java -jar #{Jarbler::Config.create.jar_name}")
+          restore_gem_env
           # Ensure that the output contains the expected strings
           assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\nstderr:\n#{stderr}"
           assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\nstderr:\n#{stderr}"

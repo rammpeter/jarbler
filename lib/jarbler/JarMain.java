@@ -90,8 +90,9 @@ class JarMain {
 
             Properties prop = new Properties();
             prop.load(new FileInputStream(newFolder.getAbsolutePath()+File.separator+"jarbler.properties"));
-            executable = prop.getProperty("jarbler.executable");
-            executable_params = prop.getProperty("jarbler.executable_params");
+            executable          = prop.getProperty("jarbler.executable");
+            executable_params   = prop.getProperty("jarbler.executable_params");
+            String gem_home_suffix     = prop.getProperty("jarbler.gem_home_suffix");
 
             Boolean compile_ruby_files = Boolean.parseBoolean(prop.getProperty("jarbler.compile_ruby_files", "false"));
             if (compile_ruby_files) {
@@ -105,8 +106,11 @@ class JarMain {
                 throw new RuntimeException("Property 'executable' definition missing in jarbler.properties");
             }
 
+            // single path to the gems directory
+            String gem_home = newFolder.getAbsolutePath()+File.separator+"gems";
+
             // create the bundle config file with the path of the gems
-            create_bundle_config(app_root, newFolder.getAbsolutePath()+File.separator+"gems");
+            create_bundle_config(app_root, gem_home);
 
             // Load the Jar file
             URLClassLoader classLoader = new URLClassLoader(new URL[]{
@@ -144,6 +148,10 @@ class JarMain {
 
             debug("JRuby set property 'user.dir' to '" + app_root + "'");
             System.setProperty("user.dir", app_root);
+
+            String full_gem_home = gem_home + File.separator + gem_home_suffix.replace("/", File.separator);
+            debug("JRuby set property 'jruby.gem.home' to '" + full_gem_home + "'");
+            System.setProperty("jruby.gem.home", full_gem_home);
 
             debug("JRuby program starts with the following arguments: ");
             for (String arg : mainArgs) {

@@ -51,6 +51,7 @@ module Jarbler
           end
           file.write("jarbler.executable_params=#{java_executable_params.strip}\n")
           file.write("jarbler.compile_ruby_files=#{config.compile_ruby_files}\n")
+          file.write("jarbler.gem_home_suffix=jruby/#{ruby_minor_version}\n")  # Extension after BUNDLE_PATH for local Gems
         end
 
         # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
@@ -109,6 +110,11 @@ module Jarbler
     # @return [void]
     def copy_needed_gems_to_staging(staging_dir, ruby_minor_version)
       gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_minor_version}"
+      FileUtils.mkdir_p("#{gem_target_location}/bin")
+      FileUtils.mkdir_p("#{gem_target_location}/build_info")
+      FileUtils.mkdir_p("#{gem_target_location}/cache")
+      FileUtils.mkdir_p("#{gem_target_location}/doc")
+      FileUtils.mkdir_p("#{gem_target_location}/extensions")
       FileUtils.mkdir_p("#{gem_target_location}/gems")
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
       FileUtils.mkdir_p("#{gem_target_location}/bundler/gems")
@@ -270,7 +276,8 @@ module Jarbler
         puts "Compiling .rb files to .class is done with JRuby version #{JRUBY_VERSION}, but intended runtime JRuby version for jar file  is #{config.jruby_version}"
       end
 
-      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ }                   # find all Ruby files in the current directory
+      # Compile all .rb files in the current directory tree, but not in the gems directory
+      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ && !f.include?("#{File::SEPARATOR}gems#{File::SEPARATOR}") }                   # find all Ruby files in the current directory
 
       # Exclude named files or directories from compiling
       config.excludes_from_compile.each do |exclude|
