@@ -144,7 +144,6 @@ class BuilderTest < Minitest::Test
 # Add the current directory to the load path
 $LOAD_PATH.unshift __dir__
 puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
-puts 'Bundler.settings is ' + Bundler.settings.inspect
 require 'test_inner'
 puts 'test_outer running'
 TestInner.new.test_inner
