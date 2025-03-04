@@ -5,6 +5,7 @@ require 'bundler/installer'
 require 'bundler/lockfile_generator'
 require 'jarbler/builder'
 require 'jarbler/config'
+require 'open3'
 
 class BuilderTest < Minitest::Test
   def setup
@@ -77,12 +78,12 @@ class BuilderTest < Minitest::Test
         assert_jar_file(Dir.pwd)
         debug "Now executing the jar file"
         remove_gem_env
-        response = `java -jar hugo.jar -c -d`
+        stdout, stderr, status = Open3.capture3("java -jar hugo.jar -c -d")
         restore_gem_env
         debug "After executing the jar file"
-        response_match = response.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
-        assert !response_match.empty?, "Response should contain the executable params but is:\n#{response}"
-        assert !response.lines.select{|s| s == "SUCCESS\n" }.empty?, "Response should contain the line SUCCESS but is:\n#{response}"
+        response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
+        assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\nstderr:\n#{stderr}"
+        assert !stdout.lines.select{|s| s == "SUCCESS\n" }.empty?, "Response should contain the line SUCCESS but is:\n#{stdout}\nstderr:\n#{stderr}"
       end
     end
   end
@@ -142,6 +143,8 @@ class BuilderTest < Minitest::Test
           file.write("\
 # Add the current directory to the load path
 $LOAD_PATH.unshift __dir__
+puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
+puts 'Bundler.settings is ' + Bundler.settings.inspect
 require 'test_inner'
 puts 'test_outer running'
 TestInner.new.test_inner
@@ -153,6 +156,7 @@ require 'nokogiri'
 class TestInner
   def test_inner
     puts 'test_inner running'
+    puts 'In test_inner LOAD_PATH is ' + $LOAD_PATH.inspect
     Nokogiri::XML('<x>Hugo</x>').xpath('//x').each do |x|
       puts x.text
     end
@@ -174,7 +178,7 @@ end
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
-          # ENV['DEBUG'] = 'true'
+          ENV['DEBUG'] = 'true'
           ENV.delete('BUNDLE_BIN_PATH')
           ENV.delete('BUNDLE_GEMFILE')
           ENV.delete('BUNDLER_SETUP')
@@ -182,11 +186,11 @@ end
           ENV.delete('GEM_HOME')
           ENV.delete('RUBYLIB')
           ENV.delete('RUBYOPT')
-          output = `java -jar #{Jarbler::Config.create.jar_name}`
+          stdout, stderr, status = Open3.capture3("java -jar #{Jarbler::Config.create.jar_name}")
           # Ensure that the output contains the expected strings
-          assert output.include?('test_outer running'), "Output should contain 'test_outer running' but is:\n#{output}"
-          assert output.include?('test_inner running'), "Output should contain 'test_inner running' but is:\n#{output}"
-          assert output.include?('Hugo'), "Output should contain 'Hugo' but is:\n#{output}"
+          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\nstderr:\n#{stderr}"
+          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\nstderr:\n#{stderr}"
+          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\nstderr:\n#{stderr}"
         end
       end
     else

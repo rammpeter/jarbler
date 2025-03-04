@@ -4,6 +4,7 @@ require 'bundler'
 require 'find'
 require 'fileutils'
 require 'yaml'
+require 'open3'
 
 module Jarbler
   class Builder
@@ -238,10 +239,10 @@ module Jarbler
     # @param [String] command Command to execute
     # @return [String] the output of the command
     def exec_command(command)
-      lines = `#{command}`
-      raise "Command \"#{command}\"failed with return code #{$?} and output:\n#{lines}" unless $?.success?
-      debug "Command \"#{command}\" executed successfully with following output:\n#{lines}"
-      lines
+      stdout, stderr, status = Open3.capture3(command)
+      raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}" unless status.success?
+      debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
+      "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"
     end
 
     # Copy file or directory with error handling
