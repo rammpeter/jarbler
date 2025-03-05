@@ -24,8 +24,8 @@ class Minitest::Test
     log "##### End test #{self.class.name}::#{self.name}\n\n"
 
     # Restore original stdout
-    #$stdout = @@original_stdout
-    # @@log_file.close
+    $stdout = @@original_stdout
+    @@log_file.close
 
     super
   end
