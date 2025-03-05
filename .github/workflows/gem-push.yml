@@ -50,6 +50,12 @@ jobs:
         bundle install
         bundle exec rake test
 
+    - name: Archive test log
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}_${{ matrix.ruby }}_test.log
+        path: log/test.log
+
   build:
     name: Build + Publish
     runs-on: ubuntu-latest

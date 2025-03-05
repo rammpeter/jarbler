@@ -5,18 +5,12 @@ require 'bundler/installer'
 require 'bundler/lockfile_generator'
 require 'jarbler/builder'
 require 'jarbler/config'
-require 'open3'
+require 'test_helper'
 
 class BuilderTest < Minitest::Test
   def setup
-    debug "##### Starting test #{self.class.name}::#{self.name}"
-    debug "Gem.paths.path in setup: #{Gem.paths.path}"
-    debug "GEM_PATH in setup: #{ENV['GEM_PATH']}" if ENV['GEM_PATH']
+    super # Redirect stdout to log file first
     @builder = Jarbler::Builder.new
-  end
-
-  def teardown
-    debug "##### End test #{self.class.name}::#{self.name}"
   end
 
   # Check the right jar file name
@@ -66,7 +60,7 @@ class BuilderTest < Minitest::Test
         debug "Now executing the jar file"
         ENV['debug'] = 'true'
         remove_gem_env
-        stdout, stderr, status = Open3.capture3("java -jar hugo.jar -c -d")
+        stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d")
         restore_gem_env
         debug "After executing the jar file\nstdout:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
@@ -171,12 +165,12 @@ end
           end
           ENV['DEBUG'] = 'true'
           remove_gem_env
-          stdout, stderr, status = Open3.capture3("java -jar #{Jarbler::Config.create.jar_name}")
+          stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}")
           restore_gem_env
           # Ensure that the output contains the expected strings
-          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\nstderr:\n#{stderr}"
-          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\nstderr:\n#{stderr}"
-          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\nstderr:\n#{stderr}"
+          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
         end
       end
     else
@@ -281,9 +275,6 @@ end
     Dir.chdir(current_dir)
   end
 
-  def debug(msg)
-    puts msg if ENV['DEBUG']
-  end
 
   # Remove the Gem/bundler/ruby specific environment to get a environment where the jar file can be started clean
   # Gem env can be restored by calling restore_gem_env

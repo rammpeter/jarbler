@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'jarbler/config'
+require 'test_helper'
 
 class ConfigTest < Minitest::Test
   def setup
