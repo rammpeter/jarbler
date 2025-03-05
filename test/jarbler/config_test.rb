@@ -4,6 +4,7 @@ require 'test_helper'
 
 class ConfigTest < Minitest::Test
   def setup
+    super
     @config = Jarbler::Config.new
   end
 
