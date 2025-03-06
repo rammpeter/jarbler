@@ -221,25 +221,23 @@ module Jarbler
       debug "Copying JRuby Jars to staging dir: #{staging_dir}"
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
       installed = nil                                                           # ensure that installed is defined outside of the block
-      # run_with_stdout do
-        tries = 5
-        tries.times do |try|
-          begin
-            installer = Gem::DependencyInstaller.new
-            installed = installer.install('jruby-jars', config.jruby_version)
-            break                                                               # escape loop if successful
-          rescue Exception, RuntimeError => e
-            debug "Builder.copy_jruby_jars_to_staging: Failed to install jruby-jars #{try}. try with #{e.class}\n#{e.message}"
-            raise if try == tries - 1                                           # last try not successful
-            sleeptime = 30
-            debug "Builder.copy_jruby_jars_to_staging: Waiting #{sleeptime} seconds to prevent from Gem::RemoteFetcher::FetchError: IOError: closed stream"
-            sleep sleeptime                                                     # wait x seconds before next try
-          end
+      tries = 5
+      tries.times do |try|
+        begin
+          installer = Gem::DependencyInstaller.new
+          installed = installer.install('jruby-jars', config.jruby_version)
+          break                                                               # escape loop if successful
+        rescue Exception, RuntimeError => e
+          debug "Builder.copy_jruby_jars_to_staging: Failed to install jruby-jars #{try}. try with #{e.class}\n#{e.message}"
+          raise if try == tries - 1                                           # last try not successful
+          sleeptime = 5
+          debug "Builder.copy_jruby_jars_to_staging: Waiting #{sleeptime} seconds to prevent from Gem::RemoteFetcher::FetchError: IOError: closed stream"
+          sleep sleeptime                                                     # wait x seconds before next try
         end
-      # end
+      end
       raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
 
-      jruby_jars_location = installed[0]&.full_gem_path
+      jruby_jars_location = installed[0]&.full_gem_path                         # need to be the first installed Gem
       debug "JRuby jars installed at: #{jruby_jars_location}"
 
       # Get the location of the jruby-jars gem
@@ -269,10 +267,7 @@ module Jarbler
     # @return [String] the output of the command
     def exec_command(command)
       debug("Execute by Open3.capture3: #{command}")
-      #stdout, stderr, status = nil
-      #run_with_stdout do
-        stdout, stderr, status = Open3.capture3(command)
-      #end
+      stdout, stderr, status = Open3.capture3(command)
       raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}" unless status.success?
       debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
       "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"
@@ -332,13 +327,6 @@ module Jarbler
     rescue Exception => e
       puts "Builder.compile_ruby_files: Failed to compile Ruby files with #{e.class}\n#{e.message}"
       raise
-    end
-
-    def run_with_stdout
-      current_stdout = $stdout                                                      # remember current stdout to reset after Open3.capture3
-      $stdout = STDOUT                                                          # Ensure that the output is written to the console
-      yield
-      $stdout = current_stdout                                                  # Restore original stdout
     end
   end
 end

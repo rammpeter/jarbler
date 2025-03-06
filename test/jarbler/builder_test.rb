@@ -9,8 +9,8 @@ require 'test_helper'
 
 class BuilderTest < Minitest::Test
   def setup
-    super # Redirect stdout to log file first
     @builder = Jarbler::Builder.new
+    super
   end
 
   # Check the right jar file name
