@@ -180,6 +180,22 @@ end
     end
   end
 
+  def test_stripped_env
+    File.open('test_env.rb', 'w') do |file|
+      file.write("\
+        puts 'ENV is '
+        ENV.sort.to_h.each do |key, value|
+          puts key + ' = ' + value
+        end
+      ")
+    end
+
+    run_without_gem_env do
+      stdout, stderr, status = exec_and_log("ruby test_env.rb")
+      puts "stdout:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+    end
+  end
+
   private
   # Prepare Gemfiles in temporary test dir and install gems
   # @param additional_gem_file_lines [Array<String>] additional gemfile lines
