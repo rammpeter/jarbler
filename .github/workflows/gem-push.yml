@@ -48,7 +48,7 @@ jobs:
         bundle --version
         which bundler
         bundle install
-        bundle exec rake test
+        bundle exec rake test 2>&1 | tee log/test.log
 
     - name: Archive test log
       if: always()

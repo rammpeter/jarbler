@@ -4,6 +4,7 @@ require 'open3'
 class Minitest::Test
 
   def setup
+    puts "\n\n-------------------------------------------------------------------"
     log "##### Starting test #{self.class.name}::#{self.name}"
     debug "Gem.paths.path in setup: #{Gem.paths.path}"
     debug "GEM_HOME in setup: #{ENV['GEM_HOME']}" if ENV['GEM_HOME']
@@ -28,9 +29,7 @@ class Minitest::Test
   def exec_and_log(command)
     log("Execute by Open3.capture3: #{command}")
     stdout, stderr, status = Open3.capture3(command)
-    log("status from Open3.capture3: #{status}")
-    log("stdout from Open3.capture3:\n#{stdout}")
-    log("stderr from Open3.capture3:\n#{stderr}")
+    log("Command '#{command}'Executed with  Open3.capture3: status = #{status}\nstdout:\n#{stdout}\n\nstderr:\n#{stderr}\n")
     assert status.success?, "Response status should be success but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
     return stdout, stderr, status
   end

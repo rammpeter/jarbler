@@ -59,9 +59,10 @@ class BuilderTest < Minitest::Test
         assert_jar_file(Dir.pwd)
         debug "Now executing the jar file"
         ENV['debug'] = 'true'
-        remove_gem_env
-        stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d")
-        restore_gem_env
+        stdout, stderr, status = nil                                            # Ensure existence of variables
+        run_without_gem_env do
+          stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d")
+        end
         debug "After executing the jar file\nstdout:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
@@ -164,9 +165,10 @@ end
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
           ENV['DEBUG'] = 'true'
-          remove_gem_env
-          stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}")
-          restore_gem_env
+          stdout, stderr, status = nil                                            # Ensure existence of variables
+          run_without_gem_env do
+            stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}")
+          end
           # Ensure that the output contains the expected strings
           assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
           assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
@@ -277,23 +279,22 @@ end
 
 
   # Remove the Gem/bundler/ruby specific environment to get a environment where the jar file can be started clean
-  # Gem env can be restored by calling restore_gem_env
+  # @param block
   # @return [void]
-  def remove_gem_env
-    @bufferred_ruby_env = {}
+  def run_without_gem_env
+    bufferred_ruby_env = {}
     ENV.to_h.each do |key, value|
       if key['GEM'] || key['BUNDLE'] || key['RUBY']
-        @bufferred_ruby_env[key] = value
+        bufferred_ruby_env[key] = value
         ENV.delete(key)
         debug "Temporary removed #{key} from ENV with value #{value}"
       end
     end
-  end
 
-  # Restore the Gem specific environment
-  def restore_gem_env
-    raise "remove_gem_env must be called before restore_gem_env" unless defined?(@bufferred_ruby_env)
-    @bufferred_ruby_env.each do |key, value|
+    yield
+
+    # Restore the Gem specific environment
+    bufferred_ruby_env.each do |key, value|
       ENV[key] = value
     end
   end

@@ -268,8 +268,8 @@ module Jarbler
     def exec_command(command)
       debug("Execute by Open3.capture3: #{command}")
       stdout, stderr, status = Open3.capture3(command)
-      raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}" unless status.success?
-      debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
+      debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\n\nstderr:\n#{stderr}\n"
+      raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\n\nstderr:\n#{stderr}\n" unless status.success?
       "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"
     rescue Exception => e
       debug "Builder.exec_command: Failed to execute command '#{command}' with #{e.class}\n#{e.message}"
