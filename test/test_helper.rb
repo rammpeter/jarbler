@@ -10,7 +10,6 @@ class Minitest::Test
   def setup
     # Redirecting output to a log file
     @@log_file = File.open(@@log_file_name, 'a')
-    @@original_stdout = $stdout
     $stdout = @@log_file
 
     log "##### Starting test #{self.class.name}::#{self.name}"
@@ -24,7 +23,7 @@ class Minitest::Test
     log "##### End test #{self.class.name}::#{self.name}\n\n"
 
     # Restore original stdout
-    $stdout = @@original_stdout
+    $stdout = STDOUT
     @@log_file.close
 
     super
@@ -40,7 +39,7 @@ class Minitest::Test
 
   def log_and_out(msg)
     log(msg)
-    @@original_stdout.puts message
+    STDOUT.puts message
   end
 
   # allow assertions failure message to appear in logfile
@@ -48,24 +47,18 @@ class Minitest::Test
   # @param [String] message
   def log_on_failure(message)
     Proc.new do
-      if $stdout ==  @@original_stdout
-        log("Assertion failed: #{message}")
-      else
-        @@original_stdout.puts message
-      end
-      message
+      log("Assertion failed: #{message}")
+      STDOUT.puts message
     end
   end
 
   def exec_and_log(command)
     log("Execute by Open3.capture3: #{command}")
-    $stdout = @@original_stdout     # restore original stdout to prevent external executuion from closed stream error
     stdout, stderr, status = Open3.capture3(command)
     log("status from Open3.capture3: #{status}")
     log("stdout from Open3.capture3:\n#{stdout}")
     log("stderr from Open3.capture3:\n#{stderr}")
     assert status.success?, log_on_failure("Response status should be success but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}")
-    $stdout = @@log_file  # restore redirect to log file
     return stdout, stderr, status
   end
 end
