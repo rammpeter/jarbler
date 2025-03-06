@@ -10,7 +10,7 @@ class Minitest::Test
   def setup
     # Redirecting output to a log file
     @@log_file = File.open(@@log_file_name, 'a')
-    $stdout = @@log_file
+    #$stdout = @@log_file
 
     log "##### Starting test #{self.class.name}::#{self.name}"
     debug "Gem.paths.path in setup: #{Gem.paths.path}"
@@ -23,7 +23,7 @@ class Minitest::Test
     log "##### End test #{self.class.name}::#{self.name}\n\n"
 
     # Restore original stdout
-    $stdout = STDOUT
+    #$stdout = STDOUT
     @@log_file.close
 
     super
