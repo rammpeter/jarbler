@@ -220,11 +220,12 @@ module Jarbler
 
       debug "Copying JRuby Jars to staging dir: #{staging_dir}"
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
+      installed = nil                                                           # ensure that installed is defined outside of the block
       run_with_stdout do
         installer = Gem::DependencyInstaller.new
         installed = installer.install('jruby-jars', config.jruby_version)
-        raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
       end
+      raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
 
       jruby_jars_location = installed[0]&.full_gem_path
       debug "JRuby jars installed at: #{jruby_jars_location}"
