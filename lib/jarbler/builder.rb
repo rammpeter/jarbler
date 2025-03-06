@@ -218,10 +218,13 @@ module Jarbler
     # @return [String] the minor ruby version of the JRuby jars with patch level set to 0
     def copy_jruby_jars_to_staging(staging_dir)
 
+      debug "Copying JRuby Jars to staging dir: #{staging_dir}"
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
-      installer = Gem::DependencyInstaller.new
-      installed = installer.install('jruby-jars', config.jruby_version)
-      raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
+      run_with_stdout do
+        installer = Gem::DependencyInstaller.new
+        installed = installer.install('jruby-jars', config.jruby_version)
+        raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
+      end
 
       jruby_jars_location = installed[0]&.full_gem_path
       debug "JRuby jars installed at: #{jruby_jars_location}"
@@ -253,10 +256,10 @@ module Jarbler
     # @return [String] the output of the command
     def exec_command(command)
       debug("Execute by Open3.capture3: #{command}")
-      #current_stdout = $stdout                                                      # remember current stdout to reset after Open3.capture3
-      #$stdout = STDOUT                                                          # Ensure that the output is written to the console
-      stdout, stderr, status = Open3.capture3(command)
-      #$stdout = current_stdout                                                  # Restore original stdout
+      stdout, stderr, status = nil
+      run_with_stdout do
+        stdout, stderr, status = Open3.capture3(command)
+      end
       raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}" unless status.success?
       debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
       "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"
@@ -316,6 +319,13 @@ module Jarbler
     rescue Exception => e
       puts "Builder.compile_ruby_files: Failed to compile Ruby files with #{e.class}\n#{e.message}"
       raise
+    end
+
+    def run_with_stdout
+      current_stdout = $stdout                                                      # remember current stdout to reset after Open3.capture3
+      $stdout = STDOUT                                                          # Ensure that the output is written to the console
+      yield
+      $stdout = current_stdout                                                  # Restore original stdout
     end
   end
 end
