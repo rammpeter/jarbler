@@ -51,6 +51,7 @@ jobs:
         bundle exec rake test
 
     - name: Archive test log
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os }}_${{ matrix.ruby }}_test.log
