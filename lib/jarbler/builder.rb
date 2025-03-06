@@ -88,22 +88,6 @@ module Jarbler
 
     private
 
-
-    # Check if there is an additional local bundle path in .bundle/config
-    # @param rails_root [String] the rails root directory
-    # @return [String] the local bundle path or nil if not configured
-    def bundle_config_bundle_path(rails_root)
-      bundle_path = nil # default
-      if File.exist?("#{rails_root}/.bundle/config")
-        bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
-        if bundle_config && bundle_config['BUNDLE_PATH']
-          bundle_path = "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
-          debug "Local Gem path configured in #{rails_root}/.bundle/config: #{bundle_path}"
-        end
-      end
-      bundle_path
-    end
-
     # Copy the needed Gems to the staging directory
     # @param staging_dir [String] the staging directory
     # @param ruby_minor_version [String] the corresponding ruby minor version of the jruby jars version
@@ -145,6 +129,9 @@ module Jarbler
           end
         end
       end
+    rescue Exception => e
+      debug("Builder.copy_needed_gems_to_staging: Failed with staging dir = '#{staging_dir}' and ruby minor version = #{ruby_minor_version} with #{e.class}\n#{e.message}")
+      raise
     end
 
     # Read the default/production dependencies from Gemfile.lock and Gemfile
@@ -174,6 +161,9 @@ module Jarbler
         end
       end
       needed_gems.uniq.sort{|a,b| a[:full_name] <=> b[:full_name]}
+    rescue Exception => e
+      debug("Builder.gem_dependencies: Failed with #{e.class}\n#{e.message}")
+      raise
     end
 
     # recurively find all indirect dependencies
@@ -194,13 +184,16 @@ module Jarbler
           debug "Gem #{lockfile_spec_dep.name} not found in Gemfile.lock"
         end
       end
+    rescue Exception => e
+      debug("Builder.add_indirect_dependencies: Failed with #{e.class}\n#{e.message}")
+      raise
     end
 
     # Output debug message if DEBUG environment variable is set
     # @param [String] msg Message to output
     # @return [void]
     def debug(msg)
-      puts msg if ENV['DEBUG']
+      puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} #{msg}" if ENV['DEBUG']
     end
 
     # Get the config object
@@ -215,6 +208,9 @@ module Jarbler
        debug ""
       end
       @config
+    rescue Exception => e
+      debug("Builder.config: Failed with #{e.class}\n#{e.message}")
+      raise
     end
 
     # Copy the jruby-jars to the staging directory
@@ -246,6 +242,9 @@ module Jarbler
       ruby_minor_version = ruby_version.split('.')[0..1].join('.') + '.0'
       debug "Corresponding Ruby minor version for JRuby (#{config.jruby_version}): #{ruby_minor_version}"
       ruby_minor_version
+    rescue Exception => e
+      debug "Builder.copy_jruby_jars_to_staging: Failed to copy JRuby jars to staging dir '#{jruby_jars_location}' with #{e.class}\n#{e.message}"
+      raise
     end
 
     # Execute the command in OS and return the output
@@ -260,6 +259,9 @@ module Jarbler
       raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}" unless status.success?
       debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
       "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"
+    rescue Exception => e
+      debug "Builder.exec_command: Failed to execute command '#{command}' with #{e.class}\n#{e.message}"
+      raise
     end
 
     # Copy file or directory with error handling
@@ -272,8 +274,8 @@ module Jarbler
       else
         FileUtils.cp(source, destination)
       end
-    rescue Exception
-      puts "Error copying #{source} to #{destination}"
+    rescue Exception => e
+      debug "Builder.file_utils_copy: Failed to copy '#{source}' to '#{destination}' with #{e.class}\n#{e.message}"
       raise
     end
 
@@ -310,6 +312,9 @@ module Jarbler
           puts "'#{ruby_file}' is not compiled and will be included in the jar file as original Ruby file"
         end
       end
+    rescue Exception => e
+      puts "Builder.compile_ruby_files: Failed to compile Ruby files with #{e.class}\n#{e.message}"
+      raise
     end
   end
 end
