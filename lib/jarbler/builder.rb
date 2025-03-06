@@ -253,7 +253,10 @@ module Jarbler
     # @return [String] the output of the command
     def exec_command(command)
       debug("Execute by Open3.capture3: #{command}")
+      current_stdout = $stdout                                                      # remember current stdout to reset after Open3.capture3
+      $stdout = STDOUT                                                          # Ensure that the output is written to the console
       stdout, stderr, status = Open3.capture3(command)
+      $stdout = current_stdout                                                  # Restore original stdout
       raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}" unless status.success?
       debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
       "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"

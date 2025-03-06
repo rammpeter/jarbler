@@ -8,3 +8,4 @@
 /coverage/.last_run.json
 /coverage/.resultset.json.lock
 /.ruby-version
+/log/test.log
