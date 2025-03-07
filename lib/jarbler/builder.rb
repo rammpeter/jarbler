@@ -4,6 +4,7 @@ require 'bundler'
 require 'find'
 require 'fileutils'
 require 'yaml'
+require 'open3'
 
 module Jarbler
   class Builder
@@ -50,6 +51,7 @@ module Jarbler
           end
           file.write("jarbler.executable_params=#{java_executable_params.strip}\n")
           file.write("jarbler.compile_ruby_files=#{config.compile_ruby_files}\n")
+          file.write("jarbler.gem_home_suffix=jruby/#{ruby_minor_version}\n")  # Extension after BUNDLE_PATH for local Gems
         end
 
         # remove files and directories from excludes, if they exist (after copying the rails project and the gems)
@@ -86,30 +88,20 @@ module Jarbler
 
     private
 
-
-    # Check if there is an additional local bundle path in .bundle/config
-    # @param rails_root [String] the rails root directory
-    # @return [String] the local bundle path or nil if not configured
-    def bundle_config_bundle_path(rails_root)
-      bundle_path = nil # default
-      if File.exist?("#{rails_root}/.bundle/config")
-        bundle_config = YAML.load_file("#{rails_root}/.bundle/config")
-        if bundle_config && bundle_config['BUNDLE_PATH']
-          bundle_path = "#{rails_root}/#{bundle_config['BUNDLE_PATH']}"
-          debug "Local Gem path configured in #{rails_root}/.bundle/config: #{bundle_path}"
-        end
-      end
-      bundle_path
-    end
-
     # Copy the needed Gems to the staging directory
     # @param staging_dir [String] the staging directory
     # @param ruby_minor_version [String] the corresponding ruby minor version of the jruby jars version
     # @return [void]
     def copy_needed_gems_to_staging(staging_dir, ruby_minor_version)
       gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_minor_version}"
+      FileUtils.mkdir_p("#{gem_target_location}/bin")
+      FileUtils.mkdir_p("#{gem_target_location}/build_info")
+      FileUtils.mkdir_p("#{gem_target_location}/cache")
+      FileUtils.mkdir_p("#{gem_target_location}/doc")
+      FileUtils.mkdir_p("#{gem_target_location}/extensions")
       FileUtils.mkdir_p("#{gem_target_location}/gems")
       FileUtils.mkdir_p("#{gem_target_location}/specifications")
+      FileUtils.mkdir_p("#{gem_target_location}/bundler/bin")
       FileUtils.mkdir_p("#{gem_target_location}/bundler/gems")
 
       needed_gems = gem_dependencies  # get the full names of the dependencies
@@ -123,14 +115,23 @@ module Jarbler
         if spec.source.is_a?(Bundler::Source::Git)
           # Copy the Gem from bundler/gems including the gemspec
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
+          spec.executables.each do |executable|
+            file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bundler/bin")
+          end
         else  # Gem is from rubygems
           unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
             # copy the Gem and gemspec separately
             file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
             file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
+            spec.executables.each do |executable|
+              file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
+            end
           end
         end
       end
+    rescue Exception => e
+      debug("Builder.copy_needed_gems_to_staging: Failed with staging dir = '#{staging_dir}' and ruby minor version = #{ruby_minor_version} with #{e.class}\n#{e.message}")
+      raise
     end
 
     # Read the default/production dependencies from Gemfile.lock and Gemfile
@@ -156,10 +157,13 @@ module Jarbler
           debug "Direct Gem dependency: #{lockfile_spec.full_name}"
           add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
-          debug "Gem #{gemfile_spec.name} not found in Gemfile.lock"
+          debug "Gem #{gemfile_spec.name} not found in specs: in Gemfile.lock"
         end
       end
       needed_gems.uniq.sort{|a,b| a[:full_name] <=> b[:full_name]}
+    rescue Exception => e
+      debug("Builder.gem_dependencies: Failed with #{e.class}\n#{e.message}")
+      raise
     end
 
     # recurively find all indirect dependencies
@@ -180,13 +184,16 @@ module Jarbler
           debug "Gem #{lockfile_spec_dep.name} not found in Gemfile.lock"
         end
       end
+    rescue Exception => e
+      debug("Builder.add_indirect_dependencies: Failed with #{e.class}\n#{e.message}")
+      raise
     end
 
     # Output debug message if DEBUG environment variable is set
     # @param [String] msg Message to output
     # @return [void]
     def debug(msg)
-      puts msg if ENV['DEBUG']
+      puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} #{msg}" if ENV['DEBUG']
     end
 
     # Get the config object
@@ -201,6 +208,9 @@ module Jarbler
        debug ""
       end
       @config
+    rescue Exception => e
+      debug("Builder.config: Failed with #{e.class}\n#{e.message}")
+      raise
     end
 
     # Copy the jruby-jars to the staging directory
@@ -208,12 +218,26 @@ module Jarbler
     # @return [String] the minor ruby version of the JRuby jars with patch level set to 0
     def copy_jruby_jars_to_staging(staging_dir)
 
+      debug "Copying JRuby Jars to staging dir: #{staging_dir}"
       # Ensure that jruby-jars gem is installed, otherwise install it. Accepts also bundler path in .bundle/config
-      installer = Gem::DependencyInstaller.new
-      installed = installer.install('jruby-jars', config.jruby_version)
+      installed = nil                                                           # ensure that installed is defined outside of the block
+      tries = 5
+      tries.times do |try|
+        begin
+          installer = Gem::DependencyInstaller.new
+          installed = installer.install('jruby-jars', config.jruby_version)
+          break                                                               # escape loop if successful
+        rescue Exception, RuntimeError => e
+          debug "Builder.copy_jruby_jars_to_staging: Failed to install jruby-jars #{try}. try with #{e.class}\n#{e.message}"
+          raise if try == tries - 1                                           # last try not successful
+          sleeptime = 5
+          debug "Builder.copy_jruby_jars_to_staging: Waiting #{sleeptime} seconds to prevent from Gem::RemoteFetcher::FetchError: IOError: closed stream"
+          sleep sleeptime                                                     # wait x seconds before next try
+        end
+      end
       raise "jruby-jars gem not installed in version #{config.jruby_version}" if installed.empty?
 
-      jruby_jars_location = installed[0]&.full_gem_path
+      jruby_jars_location = installed[0]&.full_gem_path                         # need to be the first installed Gem
       debug "JRuby jars installed at: #{jruby_jars_location}"
 
       # Get the location of the jruby-jars gem
@@ -232,16 +256,24 @@ module Jarbler
       ruby_minor_version = ruby_version.split('.')[0..1].join('.') + '.0'
       debug "Corresponding Ruby minor version for JRuby (#{config.jruby_version}): #{ruby_minor_version}"
       ruby_minor_version
+    rescue Exception => e
+      debug "Builder.copy_jruby_jars_to_staging: Failed to copy JRuby jars to staging dir '#{jruby_jars_location}' with #{e.class}\n#{e.message}"
+      debug "Stack trace of exception:\n#{e.backtrace.join("\n")}"
+      raise
     end
 
     # Execute the command in OS and return the output
     # @param [String] command Command to execute
     # @return [String] the output of the command
     def exec_command(command)
-      lines = `#{command}`
-      raise "Command \"#{command}\"failed with return code #{$?} and output:\n#{lines}" unless $?.success?
-      debug "Command \"#{command}\" executed successfully with following output:\n#{lines}"
-      lines
+      debug("Execute by Open3.capture3: #{command}")
+      stdout, stderr, status = Open3.capture3(command)
+      debug "Command \"#{command}\" executed with return code #{status}!\nstdout:\n#{stdout}\n\nstderr:\n#{stderr}\n"
+      raise "Command \"#{command}\" failed with return code #{status}!\nstdout:\n#{stdout}\n\nstderr:\n#{stderr}\n" unless status.success?
+      "stdout:\n#{stdout}\nstderr:\n#{stderr}\n"
+    rescue Exception => e
+      debug "Builder.exec_command: Failed to execute command '#{command}' with #{e.class}\n#{e.message}"
+      raise
     end
 
     # Copy file or directory with error handling
@@ -254,8 +286,8 @@ module Jarbler
       else
         FileUtils.cp(source, destination)
       end
-    rescue Exception
-      puts "Error copying #{source} to #{destination}"
+    rescue Exception => e
+      debug "Builder.file_utils_copy: Failed to copy '#{source}' to '#{destination}' with #{e.class}\n#{e.message}"
       raise
     end
 
@@ -269,7 +301,8 @@ module Jarbler
         puts "Compiling .rb files to .class is done with JRuby version #{JRUBY_VERSION}, but intended runtime JRuby version for jar file  is #{config.jruby_version}"
       end
 
-      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ }                   # find all Ruby files in the current directory
+      # Compile all .rb files in the current directory tree, but not in the gems directory
+      ruby_files = Find.find('.').select { |f| f =~ /\.rb$/ && !f.include?("#{File::SEPARATOR}gems#{File::SEPARATOR}") }                   # find all Ruby files in the current directory
 
       # Exclude named files or directories from compiling
       config.excludes_from_compile.each do |exclude|
@@ -291,6 +324,9 @@ module Jarbler
           puts "'#{ruby_file}' is not compiled and will be included in the jar file as original Ruby file"
         end
       end
+    rescue Exception => e
+      puts "Builder.compile_ruby_files: Failed to compile Ruby files with #{e.class}\n#{e.message}"
+      raise
     end
   end
 end

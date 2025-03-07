@@ -5,17 +5,12 @@ require 'bundler/installer'
 require 'bundler/lockfile_generator'
 require 'jarbler/builder'
 require 'jarbler/config'
+require 'test_helper'
 
 class BuilderTest < Minitest::Test
   def setup
-    debug "##### Starting test #{self.class.name}::#{self.name}"
-    debug "Gem.paths.path in setup: #{Gem.paths.path}"
-    debug "GEM_PATH in setup: #{ENV['GEM_PATH']}" if ENV['GEM_PATH']
     @builder = Jarbler::Builder.new
-  end
-
-  def teardown
-    debug "##### End test #{self.class.name}::#{self.name}"
+    super
   end
 
   # Check the right jar file name
@@ -59,30 +54,15 @@ class BuilderTest < Minitest::Test
           file.write("#!/usr/bin/env ruby\n")
           file.write("puts 'Starting application hugo'\n")
           file.write("puts 'hugo:' + ARGV.inspect\n")
-          file.write("begin\n")
-          file.write("  puts 'hugo:' + 'require bundler'\n")
-          file.write("  require 'bundler'\n")
-          file.write("  puts 'hugo:' + 'require Bundler.setup'\n")
-          file.write("  Bundler.setup\n")
-          file.write("  require 'jarbler/github_gem_test'\n")
-          file.write("  puts Jarbler::GithubGemTest.new.check_github_gem_dependency\n")
-          file.write("rescue Exception => e\n")
-          file.write("  puts 'Exception in test executable hugo'\n")
-          file.write("  puts e.message\n")
-          file.write("  puts e.backtrace.join(\"\n\")\n")
-          file.write("  raise\n")
-          file.write("end\n")
         end
         @builder.build_jar
         assert_jar_file(Dir.pwd)
         debug "Now executing the jar file"
-        remove_gem_env
-        response = `java -jar hugo.jar -c -d`
-        restore_gem_env
-        debug "After executing the jar file"
-        response_match = response.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
-        assert !response_match.empty?, "Response should contain the executable params but is:\n#{response}"
-        assert !response.lines.select{|s| s == "SUCCESS\n" }.empty?, "Response should contain the line SUCCESS but is:\n#{response}"
+        ENV['debug'] = 'true'
+        stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d", env: env_to_remove)
+        response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
+        assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\n"
+        assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}\n"
       end
     end
   end
@@ -142,7 +122,12 @@ class BuilderTest < Minitest::Test
           file.write("\
 # Add the current directory to the load path
 $LOAD_PATH.unshift __dir__
+puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
+puts 'GEM_HOME is ' + ENV['GEM_HOME'].inspect
+puts 'GEM_PATH is ' + ENV['GEM_PATH'].inspect
 require 'test_inner'
+puts 'after require GEM_HOME is ' + ENV['GEM_HOME'].inspect
+puts 'after require GEM_PATH is ' + ENV['GEM_PATH'].inspect
 puts 'test_outer running'
 TestInner.new.test_inner
 ")
@@ -153,6 +138,7 @@ require 'nokogiri'
 class TestInner
   def test_inner
     puts 'test_inner running'
+    puts 'In test_inner LOAD_PATH is ' + $LOAD_PATH.inspect
     Nokogiri::XML('<x>Hugo</x>').xpath('//x').each do |x|
       puts x.text
     end
@@ -174,16 +160,30 @@ end
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
-          output = `java -jar #{Jarbler::Config.create.jar_name}`
+          ENV['DEBUG'] = 'true'
+          stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
           # Ensure that the output contains the expected strings
-          assert output.include?('test_outer running'), "Output should contain 'test_outer running' but is:\n#{output}"
-          assert output.include?('test_inner running'), "Output should contain 'test_inner running' but is:\n#{output}"
-          assert output.include?('Hugo'), "Output should contain 'Hugo' but is:\n#{output}"
+          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
+          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\n"
+          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\n"
         end
       end
     else
       skip "test_compiled is executed only with JRuby"
     end
+  end
+
+  def test_stripped_env
+    File.open('test_env.rb', 'w') do |file|
+      file.write("\
+        puts 'ENV is '
+        ENV.sort.to_h.each do |key, value|
+          puts key + ' = ' + value
+        end
+      ")
+    end
+
+    exec_and_log("ruby test_env.rb", env: env_to_remove)
   end
 
   private
@@ -283,29 +283,16 @@ end
     Dir.chdir(current_dir)
   end
 
-  def debug(msg)
-    puts msg if ENV['DEBUG']
-  end
-
-  # Remove the Gem/bundler/ruby specific environment to get a environment where the jar file can be started clean
-  # Gem env can be restored by calling restore_gem_env
-  # @return [void]
-  def remove_gem_env
-    @bufferred_ruby_env = {}
+  # remove the environment variables that should not be set for called commands
+  # @return [Hash] The environment variables to remove
+  def env_to_remove
+    result = {}
     ENV.to_h.each do |key, value|
       if key['GEM'] || key['BUNDLE'] || key['RUBY']
-        @bufferred_ruby_env[key] = value
-        ENV.delete(key)
-        debug "Temporary removed #{key} from ENV with value #{value}"
+        result[key] = nil
+        debug "Env. removed for following call #{key} = '#{value}'"
       end
     end
-  end
-
-  # Restore the Gem specific environment
-  def restore_gem_env
-    raise "remove_gem_env must be called before restore_gem_env" unless defined?(@bufferred_ruby_env)
-    @bufferred_ruby_env.each do |key, value|
-      ENV[key] = value
-    end
+    result
   end
 end

@@ -16,9 +16,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         # Due to https://github.com/actions/runner/issues/849, we have to use quotes for '3.0'
-        # ruby: ['2.6', '2.7', '3.0', '3.1', head, jruby, jruby-head, truffleruby, truffleruby-head]
+        # ruby: ['2.6', '3.1', '3.3', '3.4', head, jruby, jruby-head, truffleruby, truffleruby-head]
         # truffleruby, truffleruby-head fully excluded because of incompatibility with most current bundler releases
-        ruby: ['2.6', '2.7', '3.0', '3.1', head, jruby, jruby-head]
+        ruby: ['2.6', '2.7', '3.1', '3.2', '3.4', head, jruby, jruby-head]
         exclude:
           # Exclude combinations of os and version
           - os: windows-latest
@@ -48,7 +48,14 @@ jobs:
         bundle --version
         which bundler
         bundle install
-        bundle exec rake test
+        bundle exec rake test 2>&1 | tee log/test.log
+
+    - name: Archive test log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}_${{ matrix.ruby }}_test.log
+        path: log/test.log
 
   build:
     name: Build + Publish

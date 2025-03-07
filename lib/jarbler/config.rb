@@ -143,12 +143,6 @@ module Jarbler
         @jruby_version = response&.first&.first&.first&.version&.to_s
         raise "Unable to determine the latest available version of jruby-jars gem!\nResponse = #{response.inspect}" unless @jruby_version
 
-        #command = "gem search --remote jruby-jars"
-        #lines = `#{command}`
-        #raise "Command \"#{command}\" failed with return code #{$?} and output:\n#{lines}" unless $?.success?
-        #jruby_jars_line = lines.match(/^jruby-jars \((.*)\)/)
-        #raise "No jruby-jars gem found in rubygems.org!" unless jruby_jars_line
-        #self.jruby_version = /\((.*?)\)/.match(jruby_jars_line.to_s)[1]
         debug "Jarbler::Config.define_jruby_version: JRuby version from latest jruby-jars gem: #{jruby_version}"
       end
     end

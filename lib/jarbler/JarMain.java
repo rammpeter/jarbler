@@ -10,6 +10,7 @@ import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -42,26 +43,28 @@ class JarMain {
                 debug(" - " + arg);
             }
         }
+
         // create a new folder in temp directory
         File newFolder = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString());
         newFolder.mkdir();
+
         try {
-            // Get the path of the jar file
-            String jarPath = JarMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 
-            // remove the leading slash if path is a windows path
-            String os = System.getProperty("os.name").toLowerCase();
-            boolean isWindows = os.contains("windows");
-            if (os.contains("windows") && jarPath.startsWith("/") && jarPath.indexOf(':') != -1) {
-                jarPath = jarPath.substring(1); // remove the leading slash
-            }
+            // Ensure that environment does not inject external dependencies
+            checkEnvForToxicEntries();
 
-            // get the absolute path of the jar file, especially if it contains spaces in Windows
-            String aboluteJarPath = new File(jarPath).getAbsolutePath();
+            // Get the path of the jar file with valid characters for spaces etc., especially for Windows
+            URL jarPathUrl = JarMain.class.getProtectionDomain().getCodeSource().getLocation();
+
+            // Convert the URL to a URI, then to a File
+            File jarFile = new File(jarPathUrl.toURI());
+
+            // Get the absolute path of the file
+            String jarPath = jarFile.getAbsolutePath();
 
             // extract the jarFile by unzipping it (not using the jar utility which may not be available)
-            System.out.println("Extracting files from "+aboluteJarPath+" to "+ newFolder.getAbsolutePath());
-            unzip(aboluteJarPath, newFolder.getAbsolutePath());
+            System.out.println("Extracting files from "+jarPath+" to "+ newFolder.getAbsolutePath());
+            unzip(jarPath, newFolder.getAbsolutePath());
 
             String app_root = newFolder.getAbsolutePath()+File.separator+"app_root";
 
@@ -87,8 +90,9 @@ class JarMain {
 
             Properties prop = new Properties();
             prop.load(new FileInputStream(newFolder.getAbsolutePath()+File.separator+"jarbler.properties"));
-            executable = prop.getProperty("jarbler.executable");
-            executable_params = prop.getProperty("jarbler.executable_params");
+            executable          = prop.getProperty("jarbler.executable");
+            executable_params   = prop.getProperty("jarbler.executable_params");
+            String gem_home_suffix     = prop.getProperty("jarbler.gem_home_suffix");
 
             Boolean compile_ruby_files = Boolean.parseBoolean(prop.getProperty("jarbler.compile_ruby_files", "false"));
             if (compile_ruby_files) {
@@ -102,8 +106,11 @@ class JarMain {
                 throw new RuntimeException("Property 'executable' definition missing in jarbler.properties");
             }
 
+            // single path to the gems directory
+            String gem_home = newFolder.getAbsolutePath()+File.separator+"gems";
+
             // create the bundle config file with the path of the gems
-            create_bundle_config(app_root, newFolder.getAbsolutePath()+File.separator+"gems");
+            create_bundle_config(app_root, gem_home);
 
             // Load the Jar file
             URLClassLoader classLoader = new URLClassLoader(new URL[]{
@@ -139,16 +146,26 @@ class JarMain {
                 }
             }
 
+            debug("JRuby set property 'user.dir' to '" + app_root + "'");
+            System.setProperty("user.dir", app_root);
+
+            String full_gem_home = gem_home + File.separator + gem_home_suffix.replace("/", File.separator);
+            debug("JRuby set property 'jruby.gem.home' to '" + full_gem_home + "'");
+            System.setProperty("jruby.gem.home", full_gem_home);
+
+            // String full_gem_path = full_gem_home +  File.pathSeparator + full_gem_home + File.separator + "bundler" ;
+            // debug("JRuby set property 'jruby.gem.path' to '" + full_gem_path + "'");
+            // System.setProperty("jruby.gem.path", full_gem_path);
+
             debug("JRuby program starts with the following arguments: ");
             for (String arg : mainArgs) {
                 debug(" - " + arg);
             }
 
-            debug("JRuby set property 'user.dir' to '" + app_root + "'");
-            System.setProperty("user.dir", app_root);
             // call the method org.jruby.Main.main
             debug("Calling org.jruby.Main.main with: "+ mainArgs);
             mainMethod.invoke(null, (Object)mainArgs.toArray(new String[mainArgs.size()]));
+            // TODO: evaluate return value
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -228,7 +245,7 @@ class JarMain {
 
     private static void debug(String msg) {
         if (System.getenv("DEBUG") != null) {
-            System.out.println(msg);
+            System.err.println(msg);
         }
     }
 
@@ -268,5 +285,39 @@ class JarMain {
             e.printStackTrace();
         }
         return jarFileName;
+    }
+
+    /**
+     * Check environment for entries that may inluence execution of Ruby code.
+     * @param errorSummary The current error summary
+     */
+    private static void checkEnvForToxicEntries(){
+        StringBuilder errorSummary = new StringBuilder("");
+        String toxicEntries[] = {
+            "BUNDLE_BIN_PATH",
+            "BUNDLE_GEMFILE",
+            "BUNDLER_SETUP",
+            "BUNDLER_VERSION",
+            "GEM_HOME",
+            "GEM_PATH",
+            "RUBYLIB",
+            "RUBYOPT",
+            "RUBYPATH",
+            "RUBYSHELL"
+        };
+
+        Arrays.stream(toxicEntries).forEach(entry -> {
+            String envVal = System.getenv(entry);
+            if (envVal != null) {
+                errorSummary.append("Found environment variable '"+entry+"' with value '"+envVal+"'\n");
+                debug("Possibly toxic environment variable found: '"+entry+"'! Remove it from environment before execution of jar file if it causes errors.");
+            }
+        });
+
+        if (!errorSummary.toString().isEmpty()){
+            System.err.println("The follwing environment variables may influence the execution of the packaged Ruby code.");
+            System.err.println("Please remove this environment entries before the execution of the jar file if they cause errors.");
+            System.err.println(errorSummary);
+        }
     }
 }
