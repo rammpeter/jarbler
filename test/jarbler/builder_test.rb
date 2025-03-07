@@ -59,14 +59,10 @@ class BuilderTest < Minitest::Test
         assert_jar_file(Dir.pwd)
         debug "Now executing the jar file"
         ENV['debug'] = 'true'
-        stdout, stderr, status = nil                                            # Ensure existence of variables
-        run_without_gem_env do
-          stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d")
-        end
-        debug "After executing the jar file\nstdout:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+        stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d", env: env_to_remove)
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
-        assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
-        assert status.success?, "Response status should be success but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+        assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\n"
+        assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}\n"
       end
     end
   end
@@ -165,14 +161,11 @@ end
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
           ENV['DEBUG'] = 'true'
-          stdout, stderr, status = nil                                            # Ensure existence of variables
-          run_without_gem_env do
-            stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}")
-          end
+          stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
           # Ensure that the output contains the expected strings
-          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
-          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
-          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
+          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
+          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\n"
+          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\n"
         end
       end
     else
@@ -190,10 +183,7 @@ end
       ")
     end
 
-    run_without_gem_env do
-      stdout, stderr, status = exec_and_log("ruby test_env.rb")
-      puts "stdout:\n#{stdout}\nstderr:\n#{stderr}\nstatus: #{status}"
-    end
+    exec_and_log("ruby test_env.rb", env: env_to_remove)
   end
 
   private
@@ -293,25 +283,16 @@ end
     Dir.chdir(current_dir)
   end
 
-
-  # Remove the Gem/bundler/ruby specific environment to get a environment where the jar file can be started clean
-  # @param block
-  # @return [void]
-  def run_without_gem_env
-    bufferred_ruby_env = {}
+  # remove the environment variables that should not be set for called commands
+  # @return [Hash] The environment variables to remove
+  def env_to_remove
+    result = {}
     ENV.to_h.each do |key, value|
       if key['GEM'] || key['BUNDLE'] || key['RUBY']
-        bufferred_ruby_env[key] = value
-        ENV.delete(key)
-        debug "Temporary removed #{key} from ENV with value #{value}"
+        result[key] = nil
+        debug "Env. removed for following call #{key} = '#{value}'"
       end
     end
-
-    yield
-
-    # Restore the Gem specific environment
-    bufferred_ruby_env.each do |key, value|
-      ENV[key] = value
-    end
+    result
   end
 end

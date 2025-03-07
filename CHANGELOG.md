@@ -5,7 +5,9 @@
 - Set environment GEM_HOME to the final gem location after extraction of the jar file by setting the system property `jruby.gem.home=...`<br/>
 This ensures that Gems are found also for native Ruby code without using Bundler.<br/>
 - Accept jar file locations with blanks in the path, especially for Windows
-- Setting `compile_ruby_files=true` compiles only .rb file of the application, but does not compile the .rb files in Gems.
+- Setting `compile_ruby_files=true` compiles only .rb file of the application, but does not compile the .rb files in Gems.<br/>
+  Compiling the Gems also remains an open task.
+- Bugfix: Accept spaces in the path to the jar file, especially for Windows
 
 ## [0.3.1] - 2024-07-02
 
