@@ -152,19 +152,17 @@ puts 'hugo:' + 'require Bundler.setup'
 Bundler.setup
 puts 'After Bundler.setup LOAD_PATH is ' + $LOAD_PATH.inspect
 
-require 'nokogiri'
+require 'base64'
 puts 'After first require LOAD_PATH is ' + $LOAD_PATH.inspect
-Nokogiri::XML('<x>Hugo</x>').xpath('//x').each do |x|
-  puts x.text
-end
-")
+puts Base64.encode64('Secret')  # Check function of Gem
+ ")
       end
 
       Jarbler::Config.new.write_config_file([
                                               "config.executable = 'test.rb'",
                                               "config.includes << 'test.rb'",
                                             ])
-      with_prepared_gemfile("gem 'nokogiri'") do
+      with_prepared_gemfile("gem 'base64'") do
         @builder.build_jar
         ENV['DEBUG'] = 'true'
         stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
@@ -204,15 +202,13 @@ TestInner.new.test_inner
         end
         File.open('test_inner.rb', 'w') do |file|
           file.write("\
-require 'nokogiri'
+require 'base64'
 class TestInner
   def test_inner
     puts 'test_inner running'
     puts 'In test_inner LOAD_PATH is ' + $LOAD_PATH.inspect
-    Nokogiri::XML('<x>Hugo</x>').xpath('//x').each do |x|
-      puts x.text
-    end
-  end
+    puts Base64.encode64('Secret')  # Check function of Gem
+   end
 end
 ")
         end
@@ -224,7 +220,7 @@ end
                                                 "config.includes << 'test_outer.rb'",
                                                 "config.includes << 'test_inner.rb'"
                                               ])
-        with_prepared_gemfile("gem 'nokogiri'") do
+        with_prepared_gemfile("gem 'base64'") do
           @builder.build_jar
           assert_jar_file(Dir.pwd) do
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
