@@ -51,14 +51,35 @@ class BuilderTest < Minitest::Test
       with_prepared_gemfile(["gem 'bundler'", "gem 'jarbler_test_github_gem', github: 'rammpeter/jarbler', branch: 'test_github_gem'"]) do
         Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes << 'hugo'\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
         File.open('hugo', 'w') do |file|
-          file.write("#!/usr/bin/env ruby\n")
-          file.write("puts 'Starting application hugo'\n")
-          file.write("puts 'hugo:' + ARGV.inspect\n")
+          file.write("\
+#!/usr/bin/env ruby
+puts 'Starting application hugo'
+puts 'hugo:' + ARGV.inspect
+begin
+  puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
+  puts '$DEBUG = ' + $DEBUG.inspect
+  puts 'GEM_HOME is ' + ENV['GEM_HOME'].inspect
+  puts 'GEM_PATH is ' + ENV['GEM_PATH'].inspect
+  puts 'GEM_ROOT is ' + ENV['GEM_ROOT'].inspect
+
+  puts 'hugo:' + 'require bundler'
+  require 'bundler'
+  puts 'Bundler::VERSION = ' + Bundler::VERSION
+  puts 'hugo:' + 'require Bundler.setup'
+  Bundler.setup
+  require 'jarbler/github_gem_test'
+  puts Jarbler::GithubGemTest.new.check_github_gem_dependency
+rescue Exception => e
+  puts 'Exception in test executable hugo'
+  puts e.message
+  puts e.backtrace.join(\"\n\")
+  raise
+end
+")
         end
+        ENV['DEBUG'] = 'true'
         @builder.build_jar
         assert_jar_file(Dir.pwd)
-        debug "Now executing the jar file"
-        ENV['debug'] = 'true'
         stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d", env: env_to_remove)
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\n"
@@ -114,6 +135,45 @@ class BuilderTest < Minitest::Test
   end
 
   # test if jar file is created of compiled .class files and executes well
+  def test_uncompiled_with_gem_dependency
+    in_temp_dir do
+      # Create ruby files for execution in jar file
+      File.open('test.rb', 'w') do |file|
+        file.write("\
+puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
+puts '$DEBUG = ' + $DEBUG.inspect
+puts 'GEM_HOME is ' + ENV['GEM_HOME'].inspect
+puts 'GEM_PATH is ' + ENV['GEM_PATH'].inspect
+puts 'GEM_ROOT is ' + ENV['GEM_ROOT'].inspect
+# Ensure Bundler adds the Gem paths to the LOAD_PATH
+require 'bundler'
+puts 'Bundler::VERSION = ' + Bundler::VERSION
+puts 'hugo:' + 'require Bundler.setup'
+Bundler.setup
+puts 'After Bundler.setup LOAD_PATH is ' + $LOAD_PATH.inspect
+
+require 'base64'
+puts 'After first require LOAD_PATH is ' + $LOAD_PATH.inspect
+puts Base64.encode64('Secret')  # Check function of Gem
+ ")
+      end
+
+      Jarbler::Config.new.write_config_file([
+                                              "config.executable = 'test.rb'",
+                                              "config.includes << 'test.rb'",
+                                            ])
+      with_prepared_gemfile("gem 'base64'") do
+        @builder.build_jar
+        ENV['DEBUG'] = 'true'
+        stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+        # Ensure that the output contains the expected strings
+        assert stdout.include?('U2VjcmV0'), "stdout should contain result of Base64.encode64('Secret')  but is:\n#{stdout}\n"
+      end
+    end
+  end
+
+
+  # test if jar file is created of compiled .class files and executes well
   def test_compiled
     if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
       in_temp_dir do
@@ -125,6 +185,14 @@ $LOAD_PATH.unshift __dir__
 puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
 puts 'GEM_HOME is ' + ENV['GEM_HOME'].inspect
 puts 'GEM_PATH is ' + ENV['GEM_PATH'].inspect
+
+# Ensure Bundler adds the Gem paths to the LOAD_PATH
+require 'bundler'
+puts 'Bundler::VERSION = ' + Bundler::VERSION
+puts 'hugo:' + 'require Bundler.setup'
+Bundler.setup
+puts 'After Bundler.setup LOAD_PATH is ' + $LOAD_PATH.inspect
+
 require 'test_inner'
 puts 'after require GEM_HOME is ' + ENV['GEM_HOME'].inspect
 puts 'after require GEM_PATH is ' + ENV['GEM_PATH'].inspect
@@ -134,15 +202,13 @@ TestInner.new.test_inner
         end
         File.open('test_inner.rb', 'w') do |file|
           file.write("\
-require 'nokogiri'
+require 'base64'
 class TestInner
   def test_inner
     puts 'test_inner running'
     puts 'In test_inner LOAD_PATH is ' + $LOAD_PATH.inspect
-    Nokogiri::XML('<x>Hugo</x>').xpath('//x').each do |x|
-      puts x.text
-    end
-  end
+    puts Base64.encode64('Secret')  # Check function of Gem
+   end
 end
 ")
         end
@@ -154,7 +220,7 @@ end
                                                 "config.includes << 'test_outer.rb'",
                                                 "config.includes << 'test_inner.rb'"
                                               ])
-        with_prepared_gemfile("gem 'nokogiri'") do
+        with_prepared_gemfile("gem 'base64'") do
           @builder.build_jar
           assert_jar_file(Dir.pwd) do
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
@@ -165,7 +231,7 @@ end
           # Ensure that the output contains the expected strings
           assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
           assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\n"
-          assert stdout.include?('Hugo'), "stdout should contain 'Hugo' but is:\n#{stdout}\n"
+          assert stdout.include?('U2VjcmV0'), "stdout should contain result of Base64.encode64('Secret')  but is:\n#{stdout}\n"
         end
       end
     else
@@ -173,6 +239,7 @@ end
     end
   end
 
+  # This test was for evaluation of https://github.com/jruby/jruby/issues/8680 only
   def test_stripped_env
     File.open('test_env.rb', 'w') do |file|
       file.write("\

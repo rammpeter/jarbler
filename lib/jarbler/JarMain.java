@@ -119,7 +119,6 @@ class JarMain {
                 //new URL("file:/" + jrubyCoreFile.getAbsolutePath()),
                 //new URL("file:/" + jrubyStdlibFile.getAbsolutePath())
             });
-
             // Load the class
             Class<?> clazz = classLoader.loadClass("org.jruby.Main");
 
@@ -149,13 +148,11 @@ class JarMain {
             debug("JRuby set property 'user.dir' to '" + app_root + "'");
             System.setProperty("user.dir", app_root);
 
-            String full_gem_home = gem_home + File.separator + gem_home_suffix.replace("/", File.separator);
-            debug("JRuby set property 'jruby.gem.home' to '" + full_gem_home + "'");
-            System.setProperty("jruby.gem.home", full_gem_home);
-
-            // String full_gem_path = full_gem_home +  File.pathSeparator + full_gem_home + File.separator + "bundler" ;
-            // debug("JRuby set property 'jruby.gem.path' to '" + full_gem_path + "'");
-            // System.setProperty("jruby.gem.path", full_gem_path);
+            // GEM_HOME not explicitely set because this is done by Bundle.setup based on the .bundle/config file
+            // Setting GEM_HOME explicitely may cause problems with the JRuby runtime (Gem::GemNotFoundException: can't find gem bundler (= 2.6.3) with executable bundle)
+            //String full_gem_home = gem_home + File.separator + gem_home_suffix.replace("/", File.separator);
+            //debug("JRuby set property 'jruby.gem.home' to '" + full_gem_home + "'");
+            //System.setProperty("jruby.gem.home", full_gem_home);
 
             debug("JRuby program starts with the following arguments: ");
             for (String arg : mainArgs) {
