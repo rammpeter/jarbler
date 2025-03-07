@@ -119,14 +119,16 @@ module Jarbler
             file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bundler/bin")
           end
         else  # Gem is from rubygems
-          unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
+          # TODO: Gemfile could request a different version of default gem compared to the one jruby jars
+          # unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
             # copy the Gem and gemspec separately
             file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
-            file_utils_copy("#{spec.gem_dir}/../../specifications/#{needed_gem[:full_name]}.gemspec", "#{gem_target_location}/specifications")
+            # spec.loaded_from contains the path to the gemspec file including the path prefix "default/" for default gems
+            file_utils_copy(spec.loaded_from, "#{gem_target_location}/specifications")
             spec.executables.each do |executable|
               file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
             end
-          end
+          # end
         end
       end
     rescue Exception => e
@@ -138,7 +140,8 @@ module Jarbler
     # @return [Array] Array with Hashes containing: name, version, full_name
     def gem_dependencies
       needed_gems = []
-      lockfile_specs = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile)).specs
+      lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile))
+      lockfile_specs = lockfile_parser.specs
 
       Bundler.setup # Load Gems specified in Gemfile, ensure that Gem path also includes the Gems loaded into bundler dir
       # filter Gems needed for production
@@ -157,10 +160,15 @@ module Jarbler
           debug "Direct Gem dependency: #{lockfile_spec.full_name}"
           add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
-          debug "Gem #{gemfile_spec.name} not found in specs: in Gemfile.lock"
+          if gemfile_spec.name == 'bundler'
+            debug "Gem bundler found in Gemfile.lock, use version #{Bundler::VERSION}"
+            needed_gems << { full_name: "bundler-#{lockfile_parser.bundler_version}", name: 'bundler', version: lockfile_parser.bundler_version }
+          else
+            debug "Gem #{gemfile_spec.name} not found in specs: in Gemfile.lock"
+          end
         end
       end
-      needed_gems.uniq.sort{|a,b| a[:full_name] <=> b[:full_name]}
+      needed_gems.uniq.sort{|a,b| a[:full_name] <=> b[:full_name]}              # full_name also contains version
     rescue Exception => e
       debug("Builder.gem_dependencies: Failed with #{e.class}\n#{e.message}")
       raise
