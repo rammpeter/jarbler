@@ -173,6 +173,7 @@ end
     end
   end
 
+  # This test was for evaluation of https://github.com/jruby/jruby/issues/8680 only
   def test_stripped_env
     File.open('test_env.rb', 'w') do |file|
       file.write("\
