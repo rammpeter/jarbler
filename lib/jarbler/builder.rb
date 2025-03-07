@@ -120,8 +120,8 @@ module Jarbler
           end
         else  # Gem is from rubygems
           # TODO: Gemfile could request a different version of default gem compared to the one jruby jars
-          #       Therefore the default gems are also copied to the staging directory
-          # unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
+          #       Should the default gems are also copied to the staging directory?
+          unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
             # copy the Gem and gemspec separately
             file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
             # spec.loaded_from contains the path to the gemspec file including the path prefix "default/" for default gems
@@ -129,7 +129,7 @@ module Jarbler
             spec.executables.each do |executable|
               file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
             end
-          # end
+          end
         end
       end
     rescue Exception => e
@@ -162,7 +162,7 @@ module Jarbler
           add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
           if gemfile_spec.name == 'bundler'
-            debug "Gem bundler found in Gemfile.lock, use version #{Bundler::VERSION}"
+            debug "Gem bundler found in Gemfile.lock but not in specs, use version #{Bundler::VERSION}"
             needed_gems << { full_name: "bundler-#{lockfile_parser.bundler_version}", name: 'bundler', version: lockfile_parser.bundler_version }
           else
             debug "Gem #{gemfile_spec.name} not found in specs: in Gemfile.lock"

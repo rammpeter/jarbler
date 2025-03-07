@@ -119,14 +119,6 @@ class JarMain {
                 //new URL("file:/" + jrubyCoreFile.getAbsolutePath()),
                 //new URL("file:/" + jrubyStdlibFile.getAbsolutePath())
             });
-System.err.println("-------- classloader --------");
-// Get the URLs from the URLClassLoader
-URL[] urls = classLoader.getURLs();
-
-// Print each URL
-for (URL url : urls) {
-    System.err.println(url);
-}
             // Load the class
             Class<?> clazz = classLoader.loadClass("org.jruby.Main");
 
