@@ -32,11 +32,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK 17 if jruby-head is used which is JRuby 10 now
+    - name: Set up JDK 21 if jruby-head is used which is JRuby 10 now
       if: matrix.ruby == 'jruby-head'
       uses: actions/setup-java@v3
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
 
     - uses: ruby/setup-ruby@v1
