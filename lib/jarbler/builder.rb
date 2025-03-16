@@ -20,7 +20,7 @@ module Jarbler
       debug "Project dir: #{app_root}"
 
       ruby_minor_version = copy_jruby_jars_to_staging(staging_dir) # Copy the jruby jars to the staging directory
-      exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
+      exec_command "javac -nowarn -Xlint:deprecation -source 1.8 -target 1.8 -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
