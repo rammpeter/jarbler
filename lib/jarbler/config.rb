@@ -90,6 +90,7 @@ module Jarbler
 
 # Java version the compiled .class files should be compatible with
 # controls the target and source version of the Java compiler (javac -source and -target)
+# if not set then it generates the class file version according to your current Java version
 # config.compile_java_version = '1.8'
 
 # Directories or files to exclude from the compilation if compile_ruby_files = true
