@@ -232,11 +232,12 @@ end
         ENV['DEBUG'] = 'true'
         debug "JRUBY_VERSION: #{JRUBY_VERSION}"
         Jarbler::Config.new.write_config_file([
-                                                "config.compile_ruby_files = true",
+                                                "config.compile_java_version  = '1.8'",
+                                                "config.compile_ruby_files    = true",
                                                 "config.excludes_from_compile = ['app_root/config/jarble.rb']",
-                                                "config.executable = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
-                                                "config.includes << 'test_outer.rb'",
-                                                "config.includes << 'test_inner.rb'",
+                                                "config.executable            = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
+                                                "config.includes              << 'test_outer.rb'",
+                                                "config.includes              << 'test_inner.rb'",
                                                 "config.jruby_version = '#{JRUBY_VERSION}'"   # Should use the current JRuby version for compilation and jar files
                                               ])
         with_prepared_gemfile("gem 'base64'") do
