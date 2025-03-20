@@ -308,6 +308,8 @@ module Jarbler
       # Inform if used JRuby version is different from the intended runtime JRuby version
       if JRUBY_VERSION != config.jruby_version
         puts "Compiling .rb files to .class is done with JRuby version #{JRUBY_VERSION}, but intended runtime JRuby version for jar file  is #{config.jruby_version}"
+        puts "Mismatch between the JRuby versions used for compile and runtime is not supported by JRuby and may cause sudden errors"
+        raise "JRuby version mismatch: #{JRUBY_VERSION} != #{config.jruby_version}"
       end
 
       # Compile all .rb files in the current directory tree, but not in the gems directory

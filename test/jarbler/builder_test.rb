@@ -212,13 +212,15 @@ class TestInner
 end
 ")
         end
-
+        ENV['DEBUG'] = 'true'
+        debug "JRUBY_VERSION: #{JRUBY_VERSION}"
         Jarbler::Config.new.write_config_file([
                                                 "config.compile_ruby_files = true",
                                                 "config.excludes_from_compile = ['app_root/config/jarble.rb']",
                                                 "config.executable = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
                                                 "config.includes << 'test_outer.rb'",
-                                                "config.includes << 'test_inner.rb'"
+                                                "config.includes << 'test_inner.rb'",
+                                                "config.jruby_version = '#{JRUBY_VERSION}'"
                                               ])
         with_prepared_gemfile("gem 'base64'") do
           @builder.build_jar
@@ -226,7 +228,6 @@ end
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
-          ENV['DEBUG'] = 'true'
           stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
           # Ensure that the output contains the expected strings
           assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
