@@ -186,7 +186,7 @@ puts Base64.encode64('Secret')  # Check function of Gem
       suppress_test = true
     end
 
-    if JRUBY_VERSION['SNAPSHOT']
+    if defined?(JRUBY_VERSION) && JRUBY_VERSION['SNAPSHOT']
       puts "No jruby-jars expected to be available for JRUBY_VERSION=#{JRUBY_VERSION}, test suppressed"
       suppress_test = true
     end

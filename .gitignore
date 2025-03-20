@@ -9,3 +9,6 @@
 /coverage/.resultset.json.lock
 /.ruby-version
 /log/test.log
+/scratch.log
+/scratch.rb
+/test_env.rb
