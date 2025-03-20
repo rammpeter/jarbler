@@ -175,7 +175,24 @@ puts Base64.encode64('Secret')  # Check function of Gem
 
   # test if jar file is created of compiled .class files and executes well
   def test_compiled
-    if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
+    suppress_test = false
+    unless defined?(RUBY_ENGINE)
+      puts "RUBY_ENGINE not defined, test suppressed"
+      suppress_test = true
+    end
+
+    if defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby'
+      puts "RUBY_ENGINE=#{RUBY_ENGINE} is not jruby, test suppressed"
+      suppress_test = true
+    end
+
+    if JRUBY_VERSION['SNAPSHOT']
+      puts "No jruby-jars expected to be available for JRUBY_VERSION=#{JRUBY_VERSION}, test suppressed"
+      suppress_test = true
+    end
+
+    unless suppress_test
+
       in_temp_dir do
         # Create ruby files for execution in jar file
         File.open('test_outer.rb', 'w') do |file|
@@ -220,7 +237,7 @@ end
                                                 "config.executable = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
                                                 "config.includes << 'test_outer.rb'",
                                                 "config.includes << 'test_inner.rb'",
-                                                "config.jruby_version = '#{JRUBY_VERSION}'"
+                                                "config.jruby_version = '#{JRUBY_VERSION}'"   # Should use the current JRuby version for compilation and jar files
                                               ])
         with_prepared_gemfile("gem 'base64'") do
           @builder.build_jar
