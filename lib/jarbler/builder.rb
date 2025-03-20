@@ -19,8 +19,12 @@ module Jarbler
       app_root = Dir.pwd
       debug "Project dir: #{app_root}"
 
+      source_and_target = if config.compile_java_version
+                            "-source #{config.compile_java_version} -target #{config.compile_java_version}"
+                          end
+
       ruby_minor_version = copy_jruby_jars_to_staging(staging_dir) # Copy the jruby jars to the staging directory
-      exec_command "javac -nowarn -Xlint:deprecation -source 8 -target 8 -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
+      exec_command "javac -nowarn -Xlint:deprecation #{source_and_target} -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
@@ -308,6 +312,8 @@ module Jarbler
       # Inform if used JRuby version is different from the intended runtime JRuby version
       if JRUBY_VERSION != config.jruby_version
         puts "Compiling .rb files to .class is done with JRuby version #{JRUBY_VERSION}, but intended runtime JRuby version for jar file  is #{config.jruby_version}"
+        puts "Mismatch between the JRuby versions used for compile and runtime is not supported by JRuby and may cause sudden errors"
+        raise "JRuby version mismatch: #{JRUBY_VERSION} != #{config.jruby_version}"
       end
 
       # Compile all .rb files in the current directory tree, but not in the gems directory

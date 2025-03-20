@@ -175,7 +175,24 @@ puts Base64.encode64('Secret')  # Check function of Gem
 
   # test if jar file is created of compiled .class files and executes well
   def test_compiled
-    if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
+    suppress_test = false
+    unless defined?(RUBY_ENGINE)
+      puts "RUBY_ENGINE not defined, test suppressed"
+      suppress_test = true
+    end
+
+    if defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby'
+      puts "RUBY_ENGINE=#{RUBY_ENGINE} is not jruby, test suppressed"
+      suppress_test = true
+    end
+
+    if defined?(JRUBY_VERSION) && JRUBY_VERSION['SNAPSHOT']
+      puts "No jruby-jars expected to be available for JRUBY_VERSION=#{JRUBY_VERSION}, test suppressed"
+      suppress_test = true
+    end
+
+    unless suppress_test
+
       in_temp_dir do
         # Create ruby files for execution in jar file
         File.open('test_outer.rb', 'w') do |file|
@@ -212,13 +229,16 @@ class TestInner
 end
 ")
         end
-
+        ENV['DEBUG'] = 'true'
+        debug "JRUBY_VERSION: #{JRUBY_VERSION}"
         Jarbler::Config.new.write_config_file([
-                                                "config.compile_ruby_files = true",
+                                                "config.compile_java_version  = '1.8'",
+                                                "config.compile_ruby_files    = true",
                                                 "config.excludes_from_compile = ['app_root/config/jarble.rb']",
-                                                "config.executable = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
-                                                "config.includes << 'test_outer.rb'",
-                                                "config.includes << 'test_inner.rb'"
+                                                "config.executable            = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
+                                                "config.includes              << 'test_outer.rb'",
+                                                "config.includes              << 'test_inner.rb'",
+                                                "config.jruby_version = '#{JRUBY_VERSION}'"   # Should use the current JRuby version for compilation and jar files
                                               ])
         with_prepared_gemfile("gem 'base64'") do
           @builder.build_jar
@@ -226,7 +246,6 @@ end
             assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
             assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           end
-          ENV['DEBUG'] = 'true'
           stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
           # Ensure that the output contains the expected strings
           assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
