@@ -3,7 +3,7 @@ require 'json'
 
 module Jarbler
   class Config
-    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :excludes_from_compile
+    attr_accessor :jar_name, :includes, :excludes, :jruby_version, :executable, :executable_params, :compile_ruby_files, :excludes_from_compile, :compile_java_version
 
     CONFIG_FILE = 'config/jarble.rb'
     # create instance of Config class with defaults or from config file
@@ -31,9 +31,10 @@ module Jarbler
         puts "No configuration file found at #{File.join(Dir.pwd, CONFIG_FILE)}. Using default values."
       end
       puts "Used configuration values are:"
+      puts "  compile_java_version:     #{config.compile_java_version}" if config.compile_ruby_files
       puts "  compile_ruby_files:       #{config.compile_ruby_files}"
       puts "  excludes:                 #{config.excludes}"
-      puts "  excludes_from_compile:    #{config.excludes_from_compile}"
+      puts "  excludes_from_compile:    #{config.excludes_from_compile}" if config.compile_ruby_files
       puts "  executable:               #{config.executable}"
       puts "  executable_params:        #{config.executable_params}"
       puts "  includes:                 #{config.includes}"
@@ -45,6 +46,7 @@ module Jarbler
 
     def initialize
       @compile_ruby_files = false
+      @compile_java_version = nil # not specified by default
       @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
       @excludes_from_compile = []
       @executable = 'bin/rails'
@@ -85,6 +87,10 @@ module Jarbler
 # Compile the ruby files of the project to Java .class files with JRuby's ahead-of-time compiler?
 # the original ruby files are not included in the jar file, so source code is not visible
 # config.compile_ruby_files = #{compile_ruby_files}
+
+# Java version the compiled .class files should be compatible with
+# controls the target and source version of the Java compiler (javac -source and -target)
+# config.compile_java_version = '1.8'
 
 # Directories or files to exclude from the compilation if compile_ruby_files = true
 # The paths map to the final location of files or dirs in the jar file, e.g. config.excludes_from_compile = ['gems', 'app_root/app/models']

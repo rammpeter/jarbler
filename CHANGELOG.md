@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [0.3.5] - 2025-03-20
+
+- config.compile_java_version controls setting for javac -source and -target
+
 ## [0.3.4] - 2025-03-07
 
 - Warning if Ruby-specific environment variables (GEM_HOME etc.) are set which may cause malfunction of  app in jar file
