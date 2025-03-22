@@ -160,7 +160,7 @@ module Jarbler
 
     # Avoid exception if using depprecated config attribute include_gems_to_compile
     def include_gems_to_compile=(_value)
-      puts "Configuration attribute 'include_gems_to_compile' is deprecated. Use 'excludes_from_compile = [\”gems\”]' instead."
+      puts "Configuration attribute 'include_gems_to_compile' is deprecated. Use 'excludes_from_compile = [\"gems\"]' instead."
     end
 
     def validate_values

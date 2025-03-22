@@ -1,8 +1,9 @@
 ## [Unreleased]
 
-## [0.3.5] - 2025-03-20
+## [0.3.5] - 2025-03-22
 
-- config.compile_java_version controls setting for javac -source and -target
+- new config attribute "config.compile_java_version" allows control of setting for "javac -source and -target" for AOT compilation
+- fix typo with smart quotes in config.rb
 
 ## [0.3.4] - 2025-03-07
 
