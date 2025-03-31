@@ -163,6 +163,7 @@ class JarMain {
             // Add code to execute at System.exit
             // ensure cleanup of the temporary directory also at hard exit in Ruby code like 'exit' or 'System.exit'
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("In addShutdownHook, newFolder = "+ newFolder.getAbsolutePath());
                 // remove the temp directory newFolder if not DEBUG mode
                 if (debug_active()) {
                     System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
