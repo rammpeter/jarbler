@@ -268,8 +268,29 @@ end
         end
       ")
     end
-
     exec_and_log("ruby test_env.rb", env: env_to_remove)
+  end
+
+  def test_return_code
+    in_temp_dir do
+      File.open('test_return_code.rb', 'w') do |file|
+        # file.write("raise SystemExit.new(5)")
+        file.write("exit 5")
+      end
+
+      Jarbler::Config.new.write_config_file([
+                                              "config.executable = 'test_return_code.rb'",
+                                              "config.includes << 'test_return_code.rb'",
+                                            ])
+      with_prepared_gemfile do
+        @builder.build_jar
+        stdout, stderr, status = Open3.capture3(
+          env_to_remove.merge({'DEBUG' => 'true'}),
+          "java -jar #{Jarbler::Config.create.jar_name}"
+        )
+        assert status.exitstatus == 5, "status code should be set.\nstdout:\n#{stdout}\nstderr:\n#{stderr}\n"
+      end
+    end
   end
 
   private

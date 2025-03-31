@@ -31,6 +31,11 @@ class Minitest::Test
     log(msg) if ENV['DEBUG']
   end
 
+  # Execute command and log the result
+  # @param [String] command command to execute
+  # @param [Hash] env environment variables to set for the command
+  # @return [Array] stdout, stderr, status
+  # @raise [RuntimeError] if the command fails
   def exec_and_log(command, env: {})
     log("Execute by Open3.capture3: #{command}")
     stdout, stderr, status = Open3.capture3(env, command)
