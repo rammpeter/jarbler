@@ -166,9 +166,9 @@ class JarMain {
             // Add code to execute at System.exit
             // ensure cleanup of the temporary directory also at hard exit in Ruby code like 'exit' or 'System.exit'
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                debug("Execute shutdown hook");
                 if (classLoader != null) {
                     try {
-                        System.out.println("Shutdown classloader");
                         // Free the JRuby jars to allow deletion of the temporary directory
                         classLoader.close();
                         classLoader = null; // Remove reference
@@ -177,21 +177,15 @@ class JarMain {
                         e.printStackTrace();
                     }
                 }
-                System.out.println("In addShutdownHook, newFolder = "+ newFolder.getAbsolutePath());
                 try {
                     // remove the temp directory newFolder if not DEBUG mode
                     if (debug_active()) {
                         System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
                     } else {
-                        System.out.println("deleteFolder in addShutdownHook");
                         deleteFolder(newFolder);
-                        if (newFolder.exists() && newFolder.isDirectory()) {
-                            System.err.println("The expansion directory "+ newFolder.getAbsolutePath() + " could not be deleted!");
-                        }
                     }
-                    System.out.println("Finished in addShutdownHook");
                 } catch (Exception e) {
-                    System.out.println("Exception in addShutdownHook");
+                    System.err.println("Exception in addShutdownHook "+ e.getMessage());
                     e.printStackTrace();
                 }
             }));

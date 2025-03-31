@@ -295,7 +295,7 @@ end
         jar_tmp_dir = extract_line[extract_line.index(' to ')+4, extract_line.length].strip
         if Dir.exist?(jar_tmp_dir)        # This can happen in Windows if the JRuby jar files are not freed from class loader
           Dir.entries(jar_tmp_dir).each  do |entry|
-            assert !entry.end_with?('.jar'), "'#{jar_tmp_dir}' should not have other content than .jar but is '#{entry}'"
+            assert entry.end_with?('.jar'), "'#{jar_tmp_dir}' should not have other content than .jar but is '#{entry}'"
           end
         end
       end
