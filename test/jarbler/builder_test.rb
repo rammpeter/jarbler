@@ -284,11 +284,16 @@ end
                                             ])
       with_prepared_gemfile do
         @builder.build_jar
-        stdout, stderr, status = Open3.capture3(
-          env_to_remove.merge({'DEBUG' => 'true'}),
-          "java -jar #{Jarbler::Config.create.jar_name}"
-        )
+        run_env = env_to_remove
+        run_env['DEBUG'] = nil                                                  # Should not run in DEBUG mode to ensure that temp dir is removed at exit
+        stdout, stderr, status = Open3.capture3(run_env, "java -jar #{Jarbler::Config.create.jar_name}")
         assert status.exitstatus == 5, "status code should be set.\nstdout:\n#{stdout}\nstderr:\n#{stderr}\n"
+
+        # Check if the expansion dir of jar file is removed even if the ruby code terminates with exit
+        extract_line = stdout.lines.select{|s| s =~ /Extracting files from / }.first # extract the response line from debug output of jar fir
+        # get the content of the string after ' to '
+        jar_tmp_dir = extract_line[extract_line.index(' to ')+4, extract_line.length].strip
+        assert !Dir.exist?(jar_tmp_dir), "Temporary directory '#{jar_tmp_dir}' should be removed after execution of jar file but still exists\nstdout:\n#{stdout}\nstderr:\n#{stderr}\n"
       end
     end
   end

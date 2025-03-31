@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [0.3.6] - 2025-03-31
+
+- remove temporary folder with extracted jar content after termination of Ruby code even if Ruby code terminates the JVM hard with 'exit' or 'System.exit'
+- provide exit code of Ruby code as exit code of the jar file execution
+
 ## [0.3.5] - 2025-03-22
 
 - new config attribute "config.compile_java_version" allows control of setting for "javac -source and -target" for AOT compilation

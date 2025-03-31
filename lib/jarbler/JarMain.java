@@ -48,6 +48,7 @@ class JarMain {
         File newFolder = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString());
         newFolder.mkdir();
 
+        int exitCode = 0;
         try {
 
             // Ensure that environment does not inject external dependencies
@@ -159,19 +160,27 @@ class JarMain {
                 debug(" - " + arg);
             }
 
+            // Add code to execute at System.exit
+            // ensure cleanup of the temporary directory also at hard exit in Ruby code like 'exit' or 'System.exit'
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                // remove the temp directory newFolder if not DEBUG mode
+                if (debug_active()) {
+                    System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
+                } else {
+                    deleteFolder(newFolder);
+                }
+            }));
+
             // call the method org.jruby.Main.main
             debug("Calling org.jruby.Main.main with: "+ mainArgs);
             mainMethod.invoke(null, (Object)mainArgs.toArray(new String[mainArgs.size()]));
-            // TODO: evaluate return value
         } catch (Exception e) {
             e.printStackTrace();
+            exitCode = 1; // signal unsuccessful termination
         } finally {
-            // remove the temp directory newFolder if not DEBUG mode
-            if (System.getenv("DEBUG") != null) {
-                System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
-            } else {
-                deleteFolder(newFolder);
-            }
+            // Called only if the JVM is not terminated by System.exit before, see addShutdownHook
+            // This code is not executed if called 'exit' or 'System.exit' in Ruby code before
+            System.exit(exitCode);
         }
     }
 
@@ -240,8 +249,13 @@ class JarMain {
 
     }
 
+    private static boolean debug_active() {
+        String debug = System.getenv("DEBUG");
+        return debug != null && debug.toUpperCase().equals("TRUE");
+    }
+
     private static void debug(String msg) {
-        if (System.getenv("DEBUG") != null) {
+        if (debug_active()) {
             System.err.println(msg);
         }
     }
