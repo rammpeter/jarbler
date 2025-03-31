@@ -283,7 +283,7 @@ class JarMain {
             file.delete();
             System.out.println("DELETED Temporal File: " + file.getAbsolutePath());
         } catch(Throwable t) {
-            System.err.println("Could not DELETE file: " + file.getAbsolutePath(), t);
+            System.err.println("Could not DELETE file: " + file.getAbsolutePath() + " - " + t.getMessage());
         }
     }
 
