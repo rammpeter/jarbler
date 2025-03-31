@@ -271,7 +271,7 @@ class JarMain {
         }
     }
 
-   private static void deleteFolder(File file) {
+    private static void deleteFolder(File file) {
         try
         {
             if(file.isDirectory()){
@@ -282,6 +282,15 @@ class JarMain {
             }
             file.delete();
             System.out.println("DELETED Temporal File: " + file.getAbsolutePath());
+            for (int i = 0; i < 5; i++) {
+                if (file.exists()) {
+                    Thread.sleep(1000);
+                    System.err.println("The file still exists.after " +i + " seconds: "+ file.getAbsolutePath());
+                } else {
+                    break;
+                }
+            }
+
         } catch(Throwable t) {
             System.err.println("Could not DELETE file: " + file.getAbsolutePath() + " - " + t.getMessage());
         }
