@@ -282,22 +282,13 @@ class JarMain {
     private static void deleteFolder(File file) {
         try
         {
-            if(file.isDirectory()){
+            if (file.isDirectory()) {
                File[] entries = file.listFiles();
-               for(File currentFile: entries){
+               for (File currentFile: entries) {
                    deleteFolder(currentFile);
                }
             }
             file.delete();
-            for (int i = 0; i < 5; i++) {
-                if (file.exists()) {
-                    Thread.sleep(1000);
-                    System.err.println("The file still exists.after " +i + " seconds: "+ file.getAbsolutePath());
-                } else {
-                    break;
-                }
-            }
-
         } catch(Throwable t) {
             System.err.println("Could not DELETE file: " + file.getAbsolutePath() + " - " + t.getMessage());
         }
