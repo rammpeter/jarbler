@@ -168,8 +168,11 @@ class JarMain {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 if (classLoader != null) {
                     try {
+                        System.out.println("Shutdown classloader");
                         // Free the JRuby jars to allow deletion of the temporary directory
                         classLoader.close();
+                        classLoader = null; // Remove reference
+                        System.gc(); // Suggest garbage collection
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -292,7 +295,6 @@ class JarMain {
                }
             }
             file.delete();
-            System.out.println("DELETED Temporal File: " + file.getAbsolutePath());
             for (int i = 0; i < 5; i++) {
                 if (file.exists()) {
                     Thread.sleep(1000);
