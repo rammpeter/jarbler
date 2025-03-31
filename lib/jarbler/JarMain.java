@@ -34,7 +34,7 @@ import java.security.ProtectionDomain;
 class JarMain {
 
     // declare as class variable to be used in addShutdownHook
-    private URLClassLoader classLoader = null;
+    private static URLClassLoader classLoader = null;
 
     // executed by java -jar <jar file name>
     public static void main(String[] args) {
