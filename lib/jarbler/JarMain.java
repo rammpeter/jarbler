@@ -271,17 +271,21 @@ class JarMain {
         }
     }
 
-   private static void deleteFolder(File file){
-      for (File subFile : file.listFiles()) {
-         if(subFile.isDirectory()) {
-            deleteFolder(subFile);
-         } else {
-            subFile.delete();
-         }
-      }
-      file.delete();
+   private static void deleteFolder(File file) {
+        try
+        {
+            if(file.isDirectory()){
+               File[] entries = file.listFiles();
+               for(File currentFile: entries){
+                   deleteFolder(currentFile);
+               }
+            }
+            file.delete();
+            System.out.println("DELETED Temporal File: " + file.getAbsolutePath());
+        } catch(Throwable t) {
+            System.err.println("Could not DELETE file: " + file.getAbsolutePath(), t);
+        }
     }
-
 
     private static void create_bundle_config(String app_root, String gem_path) throws IOException {
         File bundle_config = new File(app_root + File.separator + ".bundle");
