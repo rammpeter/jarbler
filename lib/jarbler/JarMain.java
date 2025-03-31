@@ -171,6 +171,7 @@ class JarMain {
                     } else {
                         deleteFolder(newFolder);
                     }
+                    System.out.println("Finished in addShutdownHook");
                 } catch (Exception e) {
                     System.out.println("Exception in addShutdownHook");
                     e.printStackTrace();
