@@ -293,7 +293,11 @@ end
         extract_line = stdout.lines.select{|s| s =~ /Extracting files from / }.first # extract the response line from debug output of jar fir
         # get the content of the string after ' to '
         jar_tmp_dir = extract_line[extract_line.index(' to ')+4, extract_line.length].strip
-        assert !Dir.exist?(jar_tmp_dir), "Temporary directory '#{jar_tmp_dir}' should be removed after execution of jar file but still exists\nstdout:\n#{stdout}\nstderr:\n#{stderr}\n"
+        if Dir.exist?(jar_tmp_dir)        # This can happen in Windows if the JRuby jar files are not freed from class loader
+          Dir.entries(jar_tmp_dir).each  do |entry|
+            assert !entry.end_with?('.jar'), "'#{jar_tmp_dir}' should not have other content than .jar but is '#{entry}'"
+          end
+        end
       end
     end
   end
