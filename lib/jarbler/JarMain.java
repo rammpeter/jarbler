@@ -33,6 +33,9 @@ import java.security.ProtectionDomain;
 
 class JarMain {
 
+    // declare as class variable to be used in addShutdownHook
+    private URLClassLoader classLoader = null;
+
     // executed by java -jar <jar file name>
     public static void main(String[] args) {
         debug("Start java process in jar file "+jar_file_name());
@@ -114,7 +117,7 @@ class JarMain {
             create_bundle_config(app_root, gem_home);
 
             // Load the Jar file
-            URLClassLoader classLoader = new URLClassLoader(new URL[]{
+            classLoader = new URLClassLoader(new URL[]{
                 jrubyCoreFile.toURI().toURL(),
                 jrubyStdlibFile.toURI().toURL()
                 //new URL("file:/" + jrubyCoreFile.getAbsolutePath()),
@@ -163,6 +166,14 @@ class JarMain {
             // Add code to execute at System.exit
             // ensure cleanup of the temporary directory also at hard exit in Ruby code like 'exit' or 'System.exit'
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (classLoader != null) {
+                    try {
+                        // Free the JRuby jars to allow deletion of the temporary directory
+                        classLoader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
                 System.out.println("In addShutdownHook, newFolder = "+ newFolder.getAbsolutePath());
                 try {
                     // remove the temp directory newFolder if not DEBUG mode
