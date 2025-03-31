@@ -169,7 +169,11 @@ class JarMain {
                     if (debug_active()) {
                         System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
                     } else {
+                        System.out.println("deleteFolder in addShutdownHook");
                         deleteFolder(newFolder);
+                        if (newFolder.exists() && newFolder.isDirectory()) {
+                            System.err.println("The expansion directory "+ newFolder.getAbsolutePath() + " could not be deleted!");
+                        }
                     }
                     System.out.println("Finished in addShutdownHook");
                 } catch (Exception e) {
