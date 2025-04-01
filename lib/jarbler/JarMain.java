@@ -51,7 +51,6 @@ class JarMain {
         File newFolder = new File(System.getProperty("java.io.tmpdir") + File.separator + UUID.randomUUID().toString());
         newFolder.mkdir();
 
-        int exitCode = 0;
         try {
 
             // Ensure that environment does not inject external dependencies
@@ -167,17 +166,13 @@ class JarMain {
             // ensure cleanup of the temporary directory also at hard exit in Ruby code like 'exit' or 'System.exit'
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 debug("Execute shutdown hook");
-                if (classLoader != null) {
-                    try {
+                try {
+                    if (classLoader != null) {
                         // Free the JRuby jars to allow deletion of the temporary directory
                         classLoader.close();
                         classLoader = null; // Remove reference
                         System.gc(); // Suggest garbage collection
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
-                }
-                try {
                     // remove the temp directory newFolder if not DEBUG mode
                     if (debug_active()) {
                         System.out.println("DEBUG mode is active, temporary folder is not removed at process termination: "+ newFolder.getAbsolutePath());
@@ -185,7 +180,7 @@ class JarMain {
                         deleteFolder(newFolder);
                     }
                 } catch (Exception e) {
-                    System.err.println("Exception in addShutdownHook "+ e.getMessage());
+                    System.err.println("Exception in shutdown hook: "+ e.getMessage());
                     e.printStackTrace();
                 }
             }));
@@ -195,11 +190,11 @@ class JarMain {
             mainMethod.invoke(null, (Object)mainArgs.toArray(new String[mainArgs.size()]));
         } catch (Exception e) {
             e.printStackTrace();
-            exitCode = 1; // signal unsuccessful termination
+            System.exit(1); // signal unsuccessful termination
         } finally {
             // Called only if the JVM is not terminated by System.exit before, see addShutdownHook
             // This code is not executed if called 'exit' or 'System.exit' in Ruby code before
-            System.exit(exitCode);
+            debug("Applicaton finished in finalize block");
         }
     }
 
