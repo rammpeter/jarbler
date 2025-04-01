@@ -268,8 +268,38 @@ end
         end
       ")
     end
-
     exec_and_log("ruby test_env.rb", env: env_to_remove)
+  end
+
+  def test_return_code
+    in_temp_dir do
+      File.open('test_return_code.rb', 'w') do |file|
+        # file.write("raise SystemExit.new(5)")
+        file.write("exit 5")
+      end
+
+      Jarbler::Config.new.write_config_file([
+                                              "config.executable = 'test_return_code.rb'",
+                                              "config.includes << 'test_return_code.rb'",
+                                            ])
+      with_prepared_gemfile do
+        @builder.build_jar
+        run_env = env_to_remove
+        run_env['DEBUG'] = nil                                                  # Should not run in DEBUG mode to ensure that temp dir is removed at exit
+        stdout, stderr, status = Open3.capture3(run_env, "java -jar #{Jarbler::Config.create.jar_name}")
+        assert status.exitstatus == 5, "status code should be set.\nstdout:\n#{stdout}\nstderr:\n#{stderr}\n"
+
+        # Check if the expansion dir of jar file is removed even if the ruby code terminates with exit
+        extract_line = stdout.lines.select{|s| s =~ /Extracting files from / }.first # extract the response line from debug output of jar fir
+        # get the content of the string after ' to '
+        jar_tmp_dir = extract_line[extract_line.index(' to ')+4, extract_line.length].strip
+        if Dir.exist?(jar_tmp_dir)        # This can happen in Windows if the JRuby jar files are not freed from class loader
+          Dir.entries(jar_tmp_dir).each  do |entry|
+            assert ['.', '..'].include?(entry) || entry.end_with?('.jar'), "'#{jar_tmp_dir}' should not have other content than .jar but is '#{entry}'"
+          end
+        end
+      end
+    end
   end
 
   private
