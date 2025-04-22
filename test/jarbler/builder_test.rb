@@ -16,7 +16,7 @@ class BuilderTest < Minitest::Test
   # Check the right jar file name
   def test_jar_name
     in_temp_dir do
-      Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'")
+      Jarbler::Config.new.write_config_file([ "config.jar_name = 'hugo.jar'", jruby_version_test_config_line])
       with_prepared_gemfile do
         @builder.build_jar
         assert File.exist?('hugo.jar'), "Jar file 'hugo.jar' should exist"
@@ -49,7 +49,12 @@ class BuilderTest < Minitest::Test
   def test_executable_and_params
     in_temp_dir do
       with_prepared_gemfile(["gem 'bundler'", "gem 'jarbler_test_github_gem', github: 'rammpeter/jarbler', branch: 'test_github_gem'"]) do
-        Jarbler::Config.new.write_config_file("config.jar_name = 'hugo.jar'\nconfig.includes << 'hugo'\nconfig.executable = 'hugo'\nconfig.executable_params = ['-a', '-b']")
+        Jarbler::Config.new.write_config_file(["config.jar_name = 'hugo.jar'",
+                                               "config.includes << 'hugo'",
+                                               "config.executable = 'hugo'",
+                                               "config.executable_params = ['-a', '-b']",
+                                               jruby_version_test_config_line
+                                              ])
         File.open('hugo', 'w') do |file|
           file.write("\
 #!/usr/bin/env ruby
@@ -92,7 +97,7 @@ end
     in_temp_dir do
       # create the file/dir to exclude
       File.open('hugo', 'w') { |file| file.write("hugo") }
-      Jarbler::Config.new.write_config_file("config.excludes = ['hugo']")
+      Jarbler::Config.new.write_config_file(["config.excludes = ['hugo']", jruby_version_test_config_line])
       with_prepared_gemfile do
         @builder.build_jar
         assert_jar_file(Dir.pwd)
@@ -105,7 +110,7 @@ end
       File.open('hugo', 'w') { |file| file.write("hugo") }
       FileUtils.mkdir_p('included')
       File.open('included/hugo', 'w') { |file| file.write("hugo") }
-      Jarbler::Config.new.write_config_file("config.includes = ['hugo', 'included']")
+      Jarbler::Config.new.write_config_file(["config.includes = ['hugo', 'included']", jruby_version_test_config_line])
       with_prepared_gemfile do
         @builder.build_jar
         assert_jar_file(Dir.pwd) do
@@ -124,6 +129,7 @@ end
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
       end
+      Jarbler::Config.new.write_config_file([jruby_version_test_config_line])
       with_prepared_gemfile(["gem 'minitest'", "gem 'minitest-reporters'"]) do
         @builder.build_jar
         assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
@@ -161,6 +167,7 @@ puts Base64.encode64('Secret')  # Check function of Gem
       Jarbler::Config.new.write_config_file([
                                               "config.executable = 'test.rb'",
                                               "config.includes << 'test.rb'",
+                                              jruby_version_test_config_line
                                             ])
       with_prepared_gemfile("gem 'base64'") do
         @builder.build_jar
@@ -281,6 +288,7 @@ end
       Jarbler::Config.new.write_config_file([
                                               "config.executable = 'test_return_code.rb'",
                                               "config.includes << 'test_return_code.rb'",
+                                              jruby_version_test_config_line
                                             ])
       with_prepared_gemfile do
         @builder.build_jar
