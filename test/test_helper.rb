@@ -53,7 +53,7 @@ class Minitest::Test
     debug "Minitest::Test.jruby_version_test_config_line: current Java mojor version = #{major_java_version}"
 
     if major_java_version < 21
-      result = "jruby_version = '9.4.12.0'"   # Use a JRuby version that is compatible with Java 8 and 11 etc.
+      result = "config.jruby_version = '9.4.12.0'"   # Use a JRuby version that is compatible with Java 8 and 11 etc.
     end
     debug "Minitest::Test.jruby_version_test_config_line: result = #{result}"
     result
