@@ -43,4 +43,19 @@ class Minitest::Test
     assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
     return stdout, stderr, status
   end
+
+  # calculate the jruby jar file to use for the current test depending on the installed java version
+  # @return [String] the whole line for config entry 'jruby_version'
+  def jruby_version_test_config_line
+    result = ''
+    java_version = `java -version 2>&1`
+    major_java_version = java_version.match('version "\K[0-9]+').to_s.to_i
+    debug "Minitest::Test.jruby_version_test_config_line: current Java mojor version = #{major_java_version}"
+
+    if major_java_version < 21
+      result = "config.jruby_version = '9.4.12.0'"   # Use a JRuby version that is compatible with Java 8 and 11 etc.
+    end
+    debug "Minitest::Test.jruby_version_test_config_line: result = #{result}"
+    result
+  end
 end
