@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+
+## [0.4.0] - 2025-04-24
+
+- config attribute `compile_java_version` removed and replaced by 'java_opts'
+- new config attribute `java_opts` allows to set additional options for the Java compiler used for jar file bootstrap code
+- `java_opts` does not affect the optional AOT compilation of Ruby files.
+- new config attribute `jrubyc_opts` allows to set additional options for JRuby's AOT compiler used for compilation of Ruby files
+
 ## [0.3.6] - 2025-03-31
 
 - remove temporary folder with extracted jar content after termination of Ruby code even if Ruby code terminates the JVM hard with 'exit' or 'System.exit'

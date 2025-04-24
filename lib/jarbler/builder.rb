@@ -19,12 +19,8 @@ module Jarbler
       app_root = Dir.pwd
       debug "Project dir: #{app_root}"
 
-      source_and_target = if config.compile_java_version
-                            "-source #{config.compile_java_version} -target #{config.compile_java_version}"
-                          end
-
       ruby_minor_version = copy_jruby_jars_to_staging(staging_dir) # Copy the jruby jars to the staging directory
-      exec_command "javac -nowarn -Xlint:deprecation #{source_and_target} -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
+      exec_command "javac -nowarn -Xlint:deprecation #{config.java_opts} -d #{staging_dir} #{__dir__}/JarMain.java" # Compile the Java files
 
       # Copy the application project to the staging directory
       FileUtils.mkdir_p("#{staging_dir}/app_root")
@@ -328,7 +324,10 @@ module Jarbler
         debug "Compile Ruby file #{ruby_file}"
         full_file_name = File.join(Dir.pwd, ruby_file)                          # full name including path is required by the JRuby compiler
         begin
-          status = JRuby::Compiler::compile_argv([full_file_name])              # compile the Ruby file
+          args = [full_file_name]
+          args.concat(config.jrubyc_opts)
+          args << "-t#{File.dirname(full_file_name)}"                          # target directory for the compiled class file
+          status = JRuby::Compiler::compile_argv(args)                          # compile the Ruby file
           if status == 0
             File.delete(full_file_name)                                         # remove the original Ruby file to ensure that the compiled class file is used
           else
@@ -337,6 +336,7 @@ module Jarbler
         rescue Exception => e
           puts "Error compiling Ruby file '#{ruby_file}': #{e.class}:#{e.message}"
           puts "'#{ruby_file}' is not compiled and will be included in the jar file as original Ruby file"
+          puts e.backtrace.join("\n")
         end
       end
     rescue Exception => e

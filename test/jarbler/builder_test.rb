@@ -182,28 +182,15 @@ puts Base64.encode64('Secret')  # Check function of Gem
 
   # test if jar file is created of compiled .class files and executes well
   def test_compiled
-    suppress_test = false
-    unless defined?(RUBY_ENGINE)
-      puts "RUBY_ENGINE not defined, test suppressed"
-      suppress_test = true
+    if suppress_test_without_jruby?
+      skip "test_compiled is executed only with JRuby"
+      return
     end
 
-    if defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby'
-      puts "RUBY_ENGINE=#{RUBY_ENGINE} is not jruby, test suppressed"
-      suppress_test = true
-    end
-
-    if defined?(JRUBY_VERSION) && JRUBY_VERSION['SNAPSHOT']
-      puts "No jruby-jars expected to be available for JRUBY_VERSION=#{JRUBY_VERSION}, test suppressed"
-      suppress_test = true
-    end
-
-    unless suppress_test
-
-      in_temp_dir do
-        # Create ruby files for execution in jar file
-        File.open('test_outer.rb', 'w') do |file|
-          file.write("\
+    in_temp_dir do
+      # Create ruby files for execution in jar file
+      File.open('test_outer.rb', 'w') do |file|
+        file.write("\
 # Add the current directory to the load path
 $LOAD_PATH.unshift __dir__
 puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
@@ -223,45 +210,105 @@ puts 'after require GEM_PATH is ' + ENV['GEM_PATH'].inspect
 puts 'test_outer running'
 TestInner.new.test_inner
 ")
-        end
-        File.open('test_inner.rb', 'w') do |file|
-          file.write("\
+      end
+      File.open('test_inner.rb', 'w') do |file|
+        file.write("\
 require 'base64'
 class TestInner
-  def test_inner
-    puts 'test_inner running'
-    puts 'In test_inner LOAD_PATH is ' + $LOAD_PATH.inspect
-    puts Base64.encode64('Secret')  # Check function of Gem
-   end
+def test_inner
+  puts 'test_inner running'
+  puts 'In test_inner LOAD_PATH is ' + $LOAD_PATH.inspect
+  puts Base64.encode64('Secret')  # Check function of Gem
+ end
 end
 ")
-        end
-        ENV['DEBUG'] = 'true'
-        debug "JRUBY_VERSION: #{JRUBY_VERSION}"
-        Jarbler::Config.new.write_config_file([
-                                                "config.compile_java_version  = '1.8'",
-                                                "config.compile_ruby_files    = true",
-                                                "config.excludes_from_compile = ['app_root/config/jarble.rb']",
-                                                "config.executable            = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
-                                                "config.includes              << 'test_outer.rb'",
-                                                "config.includes              << 'test_inner.rb'",
-                                                "config.jruby_version = '#{JRUBY_VERSION}'"   # Should use the current JRuby version for compilation and jar files
-                                              ])
-        with_prepared_gemfile("gem 'base64'") do
-          @builder.build_jar
-          assert_jar_file(Dir.pwd) do
-            assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
-            assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
-          end
-          stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
-          # Ensure that the output contains the expected strings
-          assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
-          assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\n"
-          assert stdout.include?('U2VjcmV0'), "stdout should contain result of Base64.encode64('Secret')  but is:\n#{stdout}\n"
-        end
       end
-    else
+      ENV['DEBUG'] = 'true'
+      debug "JRUBY_VERSION: #{JRUBY_VERSION}"
+      Jarbler::Config.new.write_config_file([
+                                              "config.java_opts             = '-source 1.8 -target 1.8'",
+                                              "config.compile_ruby_files    = true",
+                                              "config.excludes_from_compile = ['app_root/config/jarble.rb']",
+                                              "config.executable            = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
+                                              "config.includes              << 'test_outer.rb'",
+                                              "config.includes              << 'test_inner.rb'",
+                                              "config.jruby_version = '#{JRUBY_VERSION}'"   # Should use the current JRuby version for compilation and jar files
+                                            ])
+      with_prepared_gemfile("gem 'base64'") do
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert !File.exist?("app_root/config/jarble.class"), "File app_root/config/jarble.rb should not be compiled"
+          assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
+          assert_equal(52, get_class_file_version("JarMain.class"), 'Class file version of JarMain.class should be according to Java 8')
+        end
+        stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+        # Ensure that the output contains the expected strings
+        assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
+        assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\n"
+        assert stdout.include?('U2VjcmV0'), "stdout should contain result of Base64.encode64('Secret')  but is:\n#{stdout}\n"
+      end
+    end
+  end
+
+  # test if jar file is created of compiled .class files and executes well and classes are compiled for Java8
+  def test_compiled_for_java8
+    if suppress_test_without_jruby?
       skip "test_compiled is executed only with JRuby"
+      return
+    end
+
+    in_temp_dir do
+      # Create ruby files for execution in jar file
+      File.open('test_outer.rb', 'w') do |file|
+        file.write("\
+# Add the current directory to the load path
+$LOAD_PATH.unshift __dir__
+puts 'Before first require LOAD_PATH is ' + $LOAD_PATH.inspect
+
+# Ensure Bundler adds the Gem paths to the LOAD_PATH
+require 'bundler'
+Bundler.setup
+
+# require leads to: .../Test.class is not compiled Ruby; use java_import to load normal classes
+# require 'test'
+$CLASSPATH << File.expand_path(File.dirname(__FILE__))
+java_import 'Test'
+Test.new
+")
+      end
+      File.open('test.rb', 'w') do |file|
+        file.write("\
+class Test
+  def initialize
+    puts 'class Test initialized'
+  end
+end
+")
+      end
+      # TODO: uncomment config.jrubyc_opts after this issue is fixed: https://github.com/jruby/jruby/issues/8795
+      Jarbler::Config.new.write_config_file([
+                                              "# config.jrubyc_opts           << '-J-source 1.8 -target 1.8'",
+                                              "config.jrubyc_opts           << '--javac'",
+                                              "config.compile_ruby_files    = true",
+                                              "config.excludes_from_compile = ['app_root/config/jarble.rb', 'app_root/test_outer.rb']",
+                                              "config.executable            = 'test_outer.rb'",  # Should be transformed to 'test_outer.class'
+                                              "config.includes              << 'test_outer.rb'",
+                                              "config.includes              << 'test.rb'",
+                                              "config.jruby_version = '#{JRUBY_VERSION}'"   # Should use the current JRuby version for compilation and jar files
+                                            ])
+      with_prepared_gemfile do
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert !File.exist?("app_root/test_outer.class"), "File app_root/test_outer.rb should not be compiled"
+          assert File.exist?("app_root/test_outer.rb"), "File app_root/test_outer.rb should not be compiled"
+          assert File.exist?("app_root/test.class"), "File app_root/test.class should exist"
+          # TODO: uncomment after this issue is fixed: https://github.com/jruby/jruby/issues/8795
+          # assert_equal(52, get_class_file_version("app_root/test.class"), 'Class file version of test.class should be according to Java 8')
+        end
+        stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+        # Ensure that the output contains the expected strings
+        assert stdout.include?('class Test initialized'), "stdout should contain 'class Test initialized' but is:\n#{stdout}\n"
+      end
     end
   end
 
@@ -383,7 +430,7 @@ end
         # Ensure that included files are in jar file if they exist in original app root
         config.includes.each do |include|
           if File.exist?("#{app_root}/#{include}")  # File exists in original source
-            if config.compile_ruby_files && File.extname(include) == '.rb'
+            if config.compile_ruby_files && File.extname(include) == '.rb' && !config.excludes_from_compile.include?("app_root#{File::SEPARATOR}#{include}")
               class_file = include.sub(/\.rb$/, '.class')
               assert File.exist?("app_root/#{class_file}"), "File app_root/#{class_file} should be in jar file"
             else
@@ -418,5 +465,42 @@ end
       end
     end
     result
+  end
+
+  # Determine the class file version of a Java class file
+  def get_class_file_version(file_path)
+    stdout, stderr, status = Open3.capture3("javap -verbose #{file_path}")
+    if status.success?
+      # Extract the version number from the output
+      version_line = stdout.lines.find { |line| line['major version:'] }
+      if version_line
+        version_number = version_line.split.last.to_i
+        return version_number
+      else
+        raise "Version line not found in output: #{stdout}"
+      end
+    else
+      raise "Error executing javap: #{stderr}"
+    end
+  end
+
+  # Should test be suppressed because JRuby or JRuby jars are not available
+  # @return [Boolean] true if test should be suppressed
+  def suppress_test_without_jruby?
+    unless defined?(RUBY_ENGINE)
+      puts "RUBY_ENGINE not defined, test suppressed"
+      return true
+    end
+
+    if defined?(RUBY_ENGINE) && RUBY_ENGINE != 'jruby'
+      puts "RUBY_ENGINE=#{RUBY_ENGINE} is not jruby, test suppressed"
+      return true
+    end
+
+    if defined?(JRUBY_VERSION) && JRUBY_VERSION['SNAPSHOT']
+      puts "No jruby-jars expected to be available for JRUBY_VERSION=#{JRUBY_VERSION}, test suppressed"
+      return true
+    end
+    false
   end
 end
