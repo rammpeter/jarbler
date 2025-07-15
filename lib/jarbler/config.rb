@@ -9,6 +9,7 @@ module Jarbler
                   :excludes_from_compile,
                   :executable,
                   :executable_params,
+                  :gemfile_groups,
                   :includes,
                   :java_opts,
                   :jar_name,
@@ -47,6 +48,7 @@ module Jarbler
       puts "  excludes_from_compile:    #{config.excludes_from_compile}" if config.compile_ruby_files
       puts "  executable:               #{config.executable}"
       puts "  executable_params:        #{config.executable_params}"
+      puts "  gemfile_groups:           #{config.gemfile_groups}"
       puts "  includes:                 #{config.includes}"
       puts "  jar_name:                 #{config.jar_name}"
       puts "  java_opts:                #{config.java_opts}"
@@ -57,17 +59,18 @@ module Jarbler
     end
 
     def initialize
-      @compile_ruby_files = false
-      @compile_java_version = nil                                               # deprecated, use java_opts instead
-      @excludes = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
-      @excludes_from_compile = []
-      @executable = 'bin/rails'
-      @executable_params = %w(server -e production -p 8080)
-      @includes = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
-      @java_opts = nil
-      @jar_name = File.basename(Dir.pwd) + '.jar'
-      @jrubyc_opts = []
-      @jruby_version = nil  # determined automatically at runtime
+      @compile_ruby_files     = false
+      @compile_java_version   = nil                                               # deprecated, use java_opts instead
+      @excludes               = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
+      @excludes_from_compile  = []
+      @executable             = 'bin/rails'
+      @executable_params      = %w(server -e production -p 8080)
+      @gemfile_groups         = [:default, :production]
+      @includes               = %w(app bin config config.ru db Gemfile Gemfile.lock lib log public Rakefile script vendor tmp)
+      @java_opts              = nil
+      @jar_name               = File.basename(Dir.pwd) + '.jar'
+      @jrubyc_opts            = []
+      @jruby_version          = nil  # determined automatically at runtime
       # execute additional block if given
       yield self if block_given?
     end
@@ -92,6 +95,10 @@ module Jarbler
 
 # Additional command line parameters for the Ruby executable
 # config.executable_params = #{executable_params}
+
+# List of groups from Gemfile to include in the jar file, e.g. [:default, :production, :development, :test]
+# group :default are all gems not assigned to a specific group
+# config.gemfile_groups = #{gemfile_groups}
 
 # Application directories or files to include in the jar file
 # config.includes = #{includes}
@@ -187,6 +194,7 @@ module Jarbler
       raise "Invalid config value for jar name: #{jar_name}" unless jar_name =~ /\w+/
       raise "Invalid config value for executable: #{executable}" unless executable =~ /\w+/
       raise "Invalid config value for executable params: #{executable_params}" unless executable_params.is_a?(Array)
+      raise "Invalid config value for gemfile groups: #{gemfile_groups}" unless gemfile_groups.is_a?(Array)
       raise "Invalid config value for includes: #{includes}" unless includes.is_a?(Array)
       raise "Invalid config value for excludes: #{excludes}" unless excludes.is_a?(Array)
       raise "Invalid config value for compile_ruby_files: #{compile_ruby_files}" unless [true, false].include?(compile_ruby_files)

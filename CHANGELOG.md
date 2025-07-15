@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [0.4.1] - 2025-07-15
+
+- config attribute 'gemfile_groups' established to specify the groups of the Gemfile which should be included in the jar file
 
 ## [0.4.0] - 2025-04-24
 

@@ -357,6 +357,32 @@ end
     end
   end
 
+  # Test if Gemfiles outside the named group are not within the jar file
+  def test_gemfile_group
+    in_temp_dir do
+      Jarbler::Config.new.write_config_file([
+                                              "config.gemfile_groups        = [:default, :test]",
+                                            ])
+      with_prepared_gemfile("\
+gem 'minitest'
+
+group :development do
+  gem 'minitest-reporters'
+end
+group :test do
+  gem 'base64'
+end
+      ") do
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert Dir.glob("gems/jruby/3.4.0/gems/minitest-reporters*").empty?, "Gem minitest-reporters should not be included in jar file"
+          assert !Dir.glob("gems/jruby/3.4.0/gems/minitest*").empty?, "Gem minitest should be included in jar file"
+          assert !Dir.glob("gems/jruby/3.4.0/gems/base64*").empty?, "Gem base64 should be included in jar file"
+        end
+      end
+    end
+  end
+
   private
   # Prepare Gemfiles in temporary test dir and install gems
   # @param additional_gem_file_lines [Array<String>] additional gemfile lines

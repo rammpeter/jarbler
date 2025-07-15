@@ -144,10 +144,10 @@ module Jarbler
       lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile))
       lockfile_specs = lockfile_parser.specs
 
-      Bundler.setup # Load Gems specified in Gemfile, ensure that Gem path also includes the Gems loaded into bundler dir
+      Bundler.setup(*config.gemfile_groups) # Load Gems specified in Gemfile, ensure that Gem path also includes the Gems loaded into bundler dir
       # filter Gems needed for production
       gemfile_specs = Bundler.definition.dependencies.select do |d|
-        d.groups.include?(:default) || d.groups.include?(:production)
+        !(d.groups & config.gemfile_groups).empty?        # Check if the Gem is in the groups specified in config.gemfile_groups
       end
 
       debug "Gems from Gemfile needed for production:"
