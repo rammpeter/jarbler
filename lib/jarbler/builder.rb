@@ -10,7 +10,7 @@ module Jarbler
   class Builder
     # Execute all functions needed to build the jar file
     # Should be executed in application directory of Rails/Ruby application
-    # @return [void]
+    # @return [String] Ruby minor version of the JRuby jars with patch level set to 0
     def build_jar
       debug "Running with Ruby version '#{RUBY_VERSION}' on platform '#{RUBY_PLATFORM}'. Engine '#{RUBY_ENGINE}' version '#{RUBY_ENGINE_VERSION}'"
 
@@ -72,6 +72,7 @@ module Jarbler
         # place the jar in project directory
         file_utils_copy(config.jar_name, app_root)
         puts "Created jar file #{app_root}/#{config.jar_name}"
+        ruby_minor_version                                                      # Used in tests to know the target Gem dir
       end
     rescue Exception => e
       puts "Error: #{e.message}"

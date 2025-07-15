@@ -373,11 +373,11 @@ group :test do
   gem 'base64'
 end
       ") do
-        @builder.build_jar
+        ruby_minor_version = @builder.build_jar
         assert_jar_file(Dir.pwd) do
-          assert Dir.glob("gems/jruby/3.4.0/gems/minitest-reporters*").empty?, "Gem minitest-reporters should not be included in jar file"
-          assert !Dir.glob("gems/jruby/3.4.0/gems/minitest*").empty?, "Gem minitest should be included in jar file"
-          assert !Dir.glob("gems/jruby/3.4.0/gems/base64*").empty?, "Gem base64 should be included in jar file"
+          assert Dir.glob("gems/jruby/#{ruby_minor_version}/gems/minitest-reporters*").empty?, "Gem minitest-reporters should not be included in jar file"
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/minitest*").empty?, "Gem minitest should be included in jar file"
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/base64*").empty?, "Gem base64 should be included in jar file"
         end
       end
     end
