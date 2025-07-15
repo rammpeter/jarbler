@@ -362,6 +362,7 @@ end
     in_temp_dir do
       Jarbler::Config.new.write_config_file([
                                               "config.gemfile_groups        = [:default, :test]",
+                                              jruby_version_test_config_line
                                             ])
       with_prepared_gemfile("\
 gem 'minitest'
