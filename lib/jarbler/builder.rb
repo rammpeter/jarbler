@@ -10,7 +10,7 @@ module Jarbler
   class Builder
     # Execute all functions needed to build the jar file
     # Should be executed in application directory of Rails/Ruby application
-    # @return [void]
+    # @return [String] Ruby minor version of the JRuby jars with patch level set to 0
     def build_jar
       debug "Running with Ruby version '#{RUBY_VERSION}' on platform '#{RUBY_PLATFORM}'. Engine '#{RUBY_ENGINE}' version '#{RUBY_ENGINE_VERSION}'"
 
@@ -72,6 +72,7 @@ module Jarbler
         # place the jar in project directory
         file_utils_copy(config.jar_name, app_root)
         puts "Created jar file #{app_root}/#{config.jar_name}"
+        ruby_minor_version                                                      # Used in tests to know the target Gem dir
       end
     rescue Exception => e
       puts "Error: #{e.message}"
@@ -144,10 +145,10 @@ module Jarbler
       lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile))
       lockfile_specs = lockfile_parser.specs
 
-      Bundler.setup # Load Gems specified in Gemfile, ensure that Gem path also includes the Gems loaded into bundler dir
+      Bundler.setup(*config.gemfile_groups) # Load Gems specified in Gemfile, ensure that Gem path also includes the Gems loaded into bundler dir
       # filter Gems needed for production
       gemfile_specs = Bundler.definition.dependencies.select do |d|
-        d.groups.include?(:default) || d.groups.include?(:production)
+        !(d.groups & config.gemfile_groups).empty?        # Check if the Gem is in the groups specified in config.gemfile_groups
       end
 
       debug "Gems from Gemfile needed for production:"
