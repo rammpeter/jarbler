@@ -374,6 +374,8 @@ group :test do
   gem 'base64'
 end
       ") do
+        # Try to prevent error in Windows: No such file or directory @ rb_sysopen - D:/a/_temp/d20250724-5424-j0jn7/vendor/bundle/ruby/3.2.0/gems/minitest-5.25.5
+        sleep 1
         ruby_minor_version = @builder.build_jar
         assert_jar_file(Dir.pwd) do
           assert Dir.glob("gems/jruby/#{ruby_minor_version}/gems/minitest-reporters*").empty?, "Gem minitest-reporters should not be included in jar file"
@@ -386,9 +388,15 @@ end
 
   # Test if Gem extension is also copied to the jar f
   def test_extension
-    if (RUBY_PLATFORM['mswin'] || RUBY_PLATFORM['mingw'] || RUBY_PLATFORM['cygwin'])  && RUBY_VERSION < '3.2'
-      puts "Skipping test_extension on Windows with Ruby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
-      return
+    if RUBY_PLATFORM['mswin'] || RUBY_PLATFORM['mingw'] || RUBY_PLATFORM['cygwin'] # Windows platforms
+      if RUBY_VERSION < '3.2'
+        puts "Skipping test_extension on Windows with Ruby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
+        return
+      end
+      if defined?(JRUBY_VERSION) && JRUBY_VERSION < '10'
+        puts "Skipping test_extension on Windows with JRuby < 10 because 'erb' has no native extension in that case (libexecerb as binary is used)"
+        return
+      end
     end
 
     in_temp_dir do
