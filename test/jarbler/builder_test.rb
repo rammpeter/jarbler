@@ -413,13 +413,18 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
                                               "config.executable            = 'test.rb'",
                                             ])
       with_prepared_gemfile("gem 'erb'") do
+        ENV['DEBUG'] = 'true'
         ruby_minor_version = @builder.build_jar
         assert_jar_file(Dir.pwd) do
           assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/erb*").empty?, "Gem erb should be included in jar file"
+          if Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?
+            puts "gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb* not found"
+            puts Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/*").inspect
+            sleep 1
+          end
           assert !Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?, "Extension for erb should be included in jar file"
         end
       end
-      ENV['DEBUG'] = 'true'
       stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
       # Ensure that the output contains the expected strings
       assert stdout.include?('REQUIRE SURVIVED'), "stdout should contain 'REQUIRE SURVIVED' but is:\n#{stdout}\n"
