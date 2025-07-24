@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.4.2] - 2025-07-24
+
+- Native Gem extensions are also copied into the jar file if the Gem has a native extension<br/>
+  If the extension is of platform type 'universal-java-XX' then the 'XX' in the dir name 'universal-java-XX' is corrected with the real Java major version at start of the jar file.<br/>
+  Extensions of other platform types are copied as is.
+
 ## [0.4.1] - 2025-07-15
 
 - config attribute 'gemfile_groups' established to specify the groups of the Gemfile which should be included in the jar file

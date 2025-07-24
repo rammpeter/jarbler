@@ -359,6 +359,16 @@ end
 
   # Test if Gemfiles outside the named group are not within the jar file
   def test_gemfile_group
+    os =  RbConfig::CONFIG['host_os']
+
+    if os['mswin'] || os['mingw'] || os['cygwin'] # Windows platforms
+      if RUBY_PLATFORM != 'java' && RUBY_VERSION < '3.2'
+        puts "Skipping test_gemfile_group on Windows with CRuby < 3.2 because of of sudden error: No such file or directory @ rb_sysopen - D:/a/_temp/d20250724-5424-j0jn7/vendor/bundle/ruby/3.2.0/gems/minitest-5.25.5"
+        return
+      end
+    end
+
+
     in_temp_dir do
       Jarbler::Config.new.write_config_file([
                                               "config.gemfile_groups        = [:default, :test]",
@@ -374,6 +384,8 @@ group :test do
   gem 'base64'
 end
       ") do
+        # Try to prevent error in Windows: No such file or directory @ rb_sysopen - D:/a/_temp/d20250724-5424-j0jn7/vendor/bundle/ruby/3.2.0/gems/minitest-5.25.5
+        sleep 1
         ruby_minor_version = @builder.build_jar
         assert_jar_file(Dir.pwd) do
           assert Dir.glob("gems/jruby/#{ruby_minor_version}/gems/minitest-reporters*").empty?, "Gem minitest-reporters should not be included in jar file"
@@ -383,6 +395,64 @@ end
       end
     end
   end
+
+  # Test if Gem extension is also copied to the jar f
+  def test_extension
+    os =  RbConfig::CONFIG['host_os']
+
+    if os['mswin'] || os['mingw'] || os['cygwin'] # Windows platforms
+      puts "OS Windows detected, check for skipping test_extension"
+      if RUBY_PLATFORM != 'java' && RUBY_VERSION < '3.2'
+        puts "Skipping test_extension on Windows with CRuby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
+        return
+      end
+      if defined?(JRUBY_VERSION) && JRUBY_VERSION.to_i < 10
+        puts "Skipping test_extension on Windows with JRuby < 10 because 'erb' has no native extension in that case (libexecerb as binary is used)"
+        return
+      end
+    end
+
+    in_temp_dir do
+      File.open('test.rb', 'w') do |file|
+        file.write("\
+require 'erb'
+puts 'REQUIRE SURVIVED'
+# Check if the extension is loaded correctly
+# The unspecific extension dir universal-java-XX should be renamed
+if Dir.glob('../gems/jruby/*/extensions/universal-java-XX').empty?
+  puts 'Extension dir universal-java-XX does not exist no more'
+end
+
+puts Dir.pwd
+puts Dir.glob('../gems/jruby/*/extensions/*').inspect
+        ")
+      end
+
+      Jarbler::Config.new.write_config_file([
+                                              jruby_version_test_config_line,
+                                              "config.includes              << 'test.rb'",
+                                              "config.executable            = 'test.rb'",
+                                            ])
+      with_prepared_gemfile("gem 'erb'") do
+        ENV['DEBUG'] = 'true'
+        ruby_minor_version = @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/erb*").empty?, "Gem erb should be included in jar file"
+          if Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?
+            puts "gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb* not found"
+            puts Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/*").inspect
+            sleep 1
+          end
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?, "Extension for erb should be included in jar file"
+        end
+      end
+      stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+      # Ensure that the output contains the expected strings
+      assert stdout.include?('REQUIRE SURVIVED'), "stdout should contain 'REQUIRE SURVIVED' but is:\n#{stdout}\n"
+      assert stdout.include?('Extension dir universal-java-XX does not exist no more'), "stdout should contain 'Extension dir universal-java-XX does not exist no more' but is:\n#{stdout}\n"
+    end
+  end
+
 
   private
   # Prepare Gemfiles in temporary test dir and install gems

@@ -51,9 +51,11 @@ jobs:
       env:
         DEBUG: true
       run: |
+        # !!! These commands must be executable in windows, macos and linux !!!
         # Use the last version of bundler that supports Ruby < 3.0
-        echo "Java version"
         java -version
+        ruby --version
+        ruby -e "puts 'Ruby platform = ' + RUBY_PLATFORM"
         gem install bundler -v 2.4.22
         bundle --version
         which bundler
