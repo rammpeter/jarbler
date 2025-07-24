@@ -388,7 +388,9 @@ end
 
   # Test if Gem extension is also copied to the jar f
   def test_extension
-    if RUBY_PLATFORM['mswin'] || RUBY_PLATFORM['mingw'] || RUBY_PLATFORM['cygwin'] # Windows platforms
+    os =  RbConfig::CONFIG['host_os']
+
+    if os['mswin'] || os['mingw'] || os['cygwin'] # Windows platforms
       if RUBY_VERSION < '3.2'
         puts "Skipping test_extension on Windows with Ruby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
         return
