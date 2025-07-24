@@ -52,8 +52,9 @@ jobs:
         DEBUG: true
       run: |
         # Use the last version of bundler that supports Ruby < 3.0
-        echo "Java version"
-        java -version
+        echo -e "Java version:\n$(java -version)"
+        echo "Ruby version: $(ruby --version)"
+        echo "puts 'Ruby platform = ' + RUBY_PLATFORM" | ruby
         gem install bundler -v 2.4.22
         bundle --version
         which bundler

@@ -386,8 +386,12 @@ end
 
   # Test if Gem extension is also copied to the jar f
   def test_extension
-    in_temp_dir do
+    if (RUBY_PLATFORM['mswin'] || RUBY_PLATFORM['mingw'] || RUBY_PLATFORM['cygwin'])  && RUBY_VERSION < '3.2'
+      puts "Skipping test_extension on Windows with Ruby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
+      return
+    end
 
+    in_temp_dir do
       File.open('test.rb', 'w') do |file|
         file.write("\
 require 'erb'
