@@ -359,6 +359,16 @@ end
 
   # Test if Gemfiles outside the named group are not within the jar file
   def test_gemfile_group
+    os =  RbConfig::CONFIG['host_os']
+
+    if os['mswin'] || os['mingw'] || os['cygwin'] # Windows platforms
+      if RUBY_PLATFORM != 'java' && RUBY_VERSION < '3.2'
+        puts "Skipping test_gemfile_group on Windows with CRuby < 3.2 because of of sudden error: No such file or directory @ rb_sysopen - D:/a/_temp/d20250724-5424-j0jn7/vendor/bundle/ruby/3.2.0/gems/minitest-5.25.5"
+        return
+      end
+    end
+
+
     in_temp_dir do
       Jarbler::Config.new.write_config_file([
                                               "config.gemfile_groups        = [:default, :test]",
@@ -391,8 +401,8 @@ end
     os =  RbConfig::CONFIG['host_os']
 
     if os['mswin'] || os['mingw'] || os['cygwin'] # Windows platforms
-      if RUBY_VERSION < '3.2'
-        puts "Skipping test_extension on Windows with Ruby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
+      if RUBY_PLATFORM != 'java' && RUBY_VERSION < '3.2'
+        puts "Skipping test_extension on Windows with CRuby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
         return
       end
       if defined?(JRUBY_VERSION) && JRUBY_VERSION < '10'
