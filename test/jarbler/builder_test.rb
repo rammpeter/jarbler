@@ -401,11 +401,12 @@ end
     os =  RbConfig::CONFIG['host_os']
 
     if os['mswin'] || os['mingw'] || os['cygwin'] # Windows platforms
+      puts "OS Windows detected, check for skipping test_extension"
       if RUBY_PLATFORM != 'java' && RUBY_VERSION < '3.2'
         puts "Skipping test_extension on Windows with CRuby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
         return
       end
-      if defined?(JRUBY_VERSION) && JRUBY_VERSION < '10'
+      if defined?(JRUBY_VERSION) && JRUBY_VERSION.to_i < 10
         puts "Skipping test_extension on Windows with JRuby < 10 because 'erb' has no native extension in that case (libexecerb as binary is used)"
         return
       end
