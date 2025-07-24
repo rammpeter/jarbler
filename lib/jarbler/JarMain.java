@@ -244,7 +244,16 @@ class JarMain {
      */
     private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
     try {
-        File destFile = new File(destinationDir, zipEntry.getName());
+        String destFileName = zipEntry.getName();
+
+        // the platform name in extension dir depends on the the target java version, therfore we replace the platform name here
+        if (destFileName.contains("universal-java-XX")) {
+            String newPlatformName = "universal-java-" + javaMajorRelease4RubyPlatform();
+            debug ("Replacing platform name in file '" + destFileName + "' from 'universal-java-XX' to '" + newPlatformName + "'");
+            destFileName = destFileName.replace("universal-java-XX", newPlatformName);
+        }
+
+        File destFile = new File(destinationDir, destFileName);
 
         String destDirPath = destinationDir.getCanonicalPath();
         String destFilePath = destFile.getCanonicalPath();
@@ -346,6 +355,78 @@ class JarMain {
             System.err.println("The follwing environment variables may influence the execution of the packaged Ruby code.");
             System.err.println("Please remove this environment entries before the execution of the jar file if they cause errors.");
             System.err.println(errorSummary);
+        }
+    }
+
+    /**
+     * Get the major release of the Java platform a'la universal-java-XX
+     * @return [int] The major release of the Java platform, e.g. "java-universal-11"
+     */
+
+    private static int javaMajorRelease4RubyPlatform() {
+        try {
+            // --- Ansatz 1: Für Java 9 und höher (empfohlen) ---
+            // Versuche, Runtime.version() zu verwenden.
+            // Wir nutzen Reflection, damit der Code auch mit einem Java 8 JDK kompiliert werden kann,
+            // aber trotzdem die moderne API verwendet, wenn er auf einem Java 9+ JRE läuft.
+            Class<?> runtimeClass = Class.forName("java.lang.Runtime");
+            Method versionMethod = runtimeClass.getMethod("version");
+            Object versionObject = versionMethod.invoke(null); // Runtime.version() ist eine statische Methode
+
+            // Hole die "major" Methode vom zurückgegebenen Runtime.Version Objekt
+            Class<?> versionClass = Class.forName("java.lang.Runtime$Version");
+            Method majorMethod = versionClass.getMethod("major");
+            return (int) majorMethod.invoke(versionObject);
+
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | java.lang.reflect.InvocationTargetException e) {
+            // --- Ansatz 2: Fallback für Java 8 und älter ---
+            // Dieser Block wird ausgeführt, wenn Runtime.version() nicht verfügbar ist
+            // (z.B. auf Java 8) oder wenn Reflection fehlschlägt.
+
+            String javaVersion = System.getProperty("java.version");
+            // Beispiele für java.version:
+            // Java 8: "1.8.0_291"
+            // Java 11: "11.0.11"
+            // Java 17: "17.0.2"
+            // Java 9: "9" (manchmal ohne weitere Punkte)
+
+            // Prüfe, ob es sich um das alte "1.x.y" Format handelt
+            if (javaVersion.startsWith("1.")) {
+                // Für "1.x.y_z" ist die Hauptversion 'x'
+                // Beispiel: "1.8.0_291" -> '8'
+                try {
+                    return Integer.parseInt(javaVersion.substring(2, 3));
+                } catch (NumberFormatException ex) {
+                    // Sollte nicht passieren, aber zur Sicherheit
+                    System.err.println("Fehler beim Parsen der Java 1.x Version: " + javaVersion + " - " + ex.getMessage());
+                    return -1;
+                }
+            } else {
+                // Für "x.y.z" oder "x" Format (Java 9+ Stil)
+                // Beispiel: "11.0.11" -> '11', "17.0.2" -> '17', "9" -> '9'
+                int dotIndex = javaVersion.indexOf('.');
+                if (dotIndex != -1) {
+                    try {
+                        return Integer.parseInt(javaVersion.substring(0, dotIndex));
+                    } catch (NumberFormatException ex) {
+                        System.err.println("Fehler beim Parsen der Java x.y Version: " + javaVersion + " - " + ex.getMessage());
+                        return -1;
+                    }
+                } else {
+                    // Fallback für den Fall, dass nur die Hauptversion angegeben ist (z.B. "9", "10", "11")
+                    try {
+                        return Integer.parseInt(javaVersion);
+                    } catch (NumberFormatException ex) {
+                        System.err.println("Fehler beim Parsen der Java Hauptversion: " + javaVersion + " - " + ex.getMessage());
+                        return -1;
+                    }
+                }
+            }
+        } catch (NumberFormatException e) {
+            // Dieser Catch-Block fängt Fehler ab, die auftreten, wenn System.getProperty("java.version")
+            // ein unerwartetes Format hat, das nicht geparst werden kann.
+            System.err.println("Fehler beim Parsen der Java-Versionszeichenkette: " + System.getProperty("java.version") + " - " + e.getMessage());
+            return -1;
         }
     }
 }

@@ -384,6 +384,46 @@ end
     end
   end
 
+  # Test if Gem extension is also copied to the jar f
+  def test_extension
+    in_temp_dir do
+
+      File.open('test.rb', 'w') do |file|
+        file.write("\
+require 'erb'
+puts 'REQUIRE SURVIVED'
+# Check if the extension is loaded correctly
+# The unspecific extension dir universal-java-XX should be renamed
+if Dir.glob('../gems/jruby/*/extensions/universal-java-XX').empty?
+  puts 'Extension dir universal-java-XX does not exist no more'
+end
+
+puts Dir.pwd
+puts Dir.glob('../gems/jruby/*/extensions/*').inspect
+        ")
+      end
+
+      Jarbler::Config.new.write_config_file([
+                                              jruby_version_test_config_line,
+                                              "config.includes              << 'test.rb'",
+                                              "config.executable            = 'test.rb'",
+                                            ])
+      with_prepared_gemfile("gem 'erb'") do
+        ruby_minor_version = @builder.build_jar
+        assert_jar_file(Dir.pwd) do
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/erb*").empty?, "Gem erb should be included in jar file"
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?, "Extension for erb should be included in jar file"
+        end
+      end
+      ENV['DEBUG'] = 'true'
+      stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+      # Ensure that the output contains the expected strings
+      assert stdout.include?('REQUIRE SURVIVED'), "stdout should contain 'REQUIRE SURVIVED' but is:\n#{stdout}\n"
+      assert stdout.include?('Extension dir universal-java-XX does not exist no more'), "stdout should contain 'Extension dir universal-java-XX does not exist no more' but is:\n#{stdout}\n"
+    end
+  end
+
+
   private
   # Prepare Gemfiles in temporary test dir and install gems
   # @param additional_gem_file_lines [Array<String>] additional gemfile lines
