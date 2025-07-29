@@ -114,7 +114,8 @@ module Jarbler
         # Get the location of the needed gem
         spec = Gem::Specification.find_by_name(needed_gem[:name], needed_gem[:version])
         raise "Gem #{needed_gem[:full_name]} not found for copying" unless spec
-        debug "Found gem #{needed_gem[:full_name]} version #{needed_gem[:version]} in #{spec.gem_dir}"
+        debug "Gem #{needed_gem[:full_name]} version #{needed_gem[:version]} should be in #{spec.gem_dir}"
+        raise "Gem dir for #{needed_gem[:full_name]} version #{needed_gem[:version]} not found at location specified by Gem::Specification ( #{spec.gem_dir} )" unless Dir.exist?(spec.gem_dir)
 
         # differentiate between Gems from git/bundler and Gems from rubygems
         if spec.source.is_a?(Bundler::Source::Git)

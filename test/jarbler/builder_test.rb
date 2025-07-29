@@ -375,7 +375,7 @@ end
                                               jruby_version_test_config_line
                                             ])
       with_prepared_gemfile("\
-gem 'minitest'
+gem 'rexml'
 
 group :development do
   gem 'minitest-reporters'
@@ -384,12 +384,15 @@ group :test do
   gem 'base64'
 end
       ") do
+        # Dir.glob("#{ENV['GEM_HOME']}/gems/*") do |path|
+        #  puts File.expand_path(path)
+        # end
         # Try to prevent error in Windows: No such file or directory @ rb_sysopen - D:/a/_temp/d20250724-5424-j0jn7/vendor/bundle/ruby/3.2.0/gems/minitest-5.25.5
         sleep 1
         ruby_minor_version = @builder.build_jar
         assert_jar_file(Dir.pwd) do
           assert Dir.glob("gems/jruby/#{ruby_minor_version}/gems/minitest-reporters*").empty?, "Gem minitest-reporters should not be included in jar file"
-          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/minitest*").empty?, "Gem minitest should be included in jar file"
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/rexml*").empty?, "Gem rexml should be included in jar file"
           assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/base64*").empty?, "Gem base64 should be included in jar file"
         end
       end
