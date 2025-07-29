@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [0.4.3] - 2025-07-29
+
+- Enable Ruby and JRuby warnings ($VERBOSE = true) in call of 'jarble' if environment variable `DEBUG` is set 
+
 ## [0.4.2] - 2025-07-24
 
 - Native Gem extensions are also copied into the jar file if the Gem has a native extension<br/>
