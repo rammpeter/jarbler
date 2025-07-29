@@ -406,7 +406,7 @@ end
         puts "Skipping test_extension on Windows with CRuby < 3.2 because of possible mismatch in dependency on 'cgi' default gem"
         return
       end
-      if defined?(JRUBY_VERSION) && JRUBY_VERSION.to_i < 10
+      if defined?(JRUBY_VERSION)
         puts "Skipping test_extension on Windows with JRuby < 10 because 'erb' has no native extension in that case (libexecerb as binary is used)"
         return
       end
