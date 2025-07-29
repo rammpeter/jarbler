@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+# Ensure Ruby and JRuby warnings are enabled in debug mode
+$VERBOSE = true if ENV['DEBUG']
+
 require 'jarbler'
 
 # call config if arguments are passed and argument = 'config'
