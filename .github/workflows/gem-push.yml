@@ -62,6 +62,7 @@ jobs:
         gem update bundler
         bundle --version
         which bundler
+        bundle clean --force
         bundle install
         bundle exec rake test 2>&1 | tee log/test.log
 
