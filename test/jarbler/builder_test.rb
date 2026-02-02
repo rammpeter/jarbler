@@ -47,7 +47,7 @@ class BuilderTest < Minitest::Test
   end
 
   def test_executable_and_params
-    in_temp_dir do
+    in_temp_dir do |base_dir|
       with_prepared_gemfile(["gem 'bundler'", "gem 'jarbler_test_github_gem', github: 'rammpeter/jarbler', branch: 'test_github_gem'"]) do
         Jarbler::Config.new.write_config_file(["config.jar_name = 'hugo.jar'",
                                                "config.includes << 'hugo'",
@@ -86,6 +86,9 @@ end
         @builder.build_jar
         assert_jar_file(Dir.pwd)
         stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d", env: env_to_remove)
+
+        save_artifact_on_failure('test_executable_and_params', 'hugo.jar', base_dir, status)
+
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\n"
         assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}\n"
@@ -124,7 +127,7 @@ end
   end
 
   def test_local_bundle_path_configured
-    in_temp_dir do
+    in_temp_dir do |base_dir|
       FileUtils.mkdir_p('.bundle')
       File.open('.bundle/config', 'w') do |file|
         file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
@@ -142,7 +145,7 @@ end
 
   # test if jar file is created of compiled .class files and executes well
   def test_uncompiled_with_gem_dependency
-    in_temp_dir do
+    in_temp_dir do |base_dir|
       # Create ruby files for execution in jar file
       File.open('test.rb', 'w') do |file|
         file.write("\
@@ -172,7 +175,11 @@ puts Base64.encode64('Secret')  # Check function of Gem
       with_prepared_gemfile(["gem 'base64'", "gem 'jar-dependencies', '0.5.4'"]) do
         @builder.build_jar
         ENV['DEBUG'] = 'true'
-        stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+        stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+
+        save_artifact_on_failure('test_uncompiled_with_gem_dependency', Jarbler::Config.create.jar_name, base_dir, status)
+
+        assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
         # Ensure that the output contains the expected strings
         assert stdout.include?('U2VjcmV0'), "stdout should contain result of Base64.encode64('Secret')  but is:\n#{stdout}\n"
         assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
@@ -192,7 +199,7 @@ puts Base64.encode64('Secret')  # Check function of Gem
       return
     end
 
-    in_temp_dir do
+    in_temp_dir do |base_dir|
       # Create ruby files for execution in jar file
       File.open('test_outer.rb', 'w') do |file|
         file.write("\
@@ -246,7 +253,11 @@ end
           assert File.exist?("app_root/config/jarble.rb"), "File app_root/config/jarble.rb should not be compiled"
           assert_equal(52, get_class_file_version("JarMain.class"), 'Class file version of JarMain.class should be according to Java 8')
         end
-        stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+        stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+
+        save_artifact_on_failure('test_compiled', Jarbler::Config.create.jar_name, base_dir, status)
+
+        assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
         # Ensure that the output contains the expected strings
         assert stdout.include?('test_outer running'), "stdout should contain 'test_outer running' but is:\n#{stdout}\n"
         assert stdout.include?('test_inner running'), "stdout should contain 'test_inner running' but is:\n#{stdout}\n"
@@ -262,7 +273,7 @@ end
       return
     end
 
-    in_temp_dir do
+    in_temp_dir do |base_dir|
       # Create ruby files for execution in jar file
       File.open('test_outer.rb', 'w') do |file|
         file.write("\
@@ -310,7 +321,11 @@ end
           # TODO: uncomment after this issue is fixed: https://github.com/jruby/jruby/issues/8795
           # assert_equal(52, get_class_file_version("app_root/test.class"), 'Class file version of test.class should be according to Java 8')
         end
-        stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+        stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+
+        save_artifact_on_failure('test_compiled_for_java8', Jarbler::Config.create.jar_name, base_dir, status)
+
+        assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
         # Ensure that the output contains the expected strings
         assert stdout.include?('class Test initialized'), "stdout should contain 'class Test initialized' but is:\n#{stdout}\n"
       end
@@ -420,7 +435,7 @@ end
       end
     end
 
-    in_temp_dir do
+    in_temp_dir do |base_dir|
       File.open('test.rb', 'w') do |file|
         file.write("\
 require 'erb'
@@ -454,7 +469,11 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
           assert !Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?, "Extension for erb should be included in jar file"
         end
       end
-      stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+      stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
+
+      save_artifact_on_failure('test_extension', Jarbler::Config.create.jar_name, base_dir, status)
+
+      assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
       # Ensure that the output contains the expected strings
       assert stdout.include?('REQUIRE SURVIVED'), "stdout should contain 'REQUIRE SURVIVED' but is:\n#{stdout}\n"
       assert stdout.include?('Extension dir universal-java-XX does not exist no more'), "stdout should contain 'Extension dir universal-java-XX does not exist no more' but is:\n#{stdout}\n"
@@ -553,7 +572,7 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
     current_dir = Dir.pwd
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        yield
+        yield current_dir
       end
     end
     Dir.chdir(current_dir)
@@ -607,5 +626,18 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
       return true
     end
     false
+  end
+
+  # Save the file in build dir for articacts
+  # @param [String] test_name to distinguish between results of different tests
+  # @param [String] file_name the file to save
+  # @param [String] base_dir the build dir
+  # @param [Process::Status] status the call result
+  def save_artifact_on_failure(test_name, file_name, base_dir, status)
+    if !status.success? # save jar file as artifact
+      saved_file_name = "#{test_name}_#{file_name}"
+      FileUtils.cp(file_name, File.join(base_dir, saved_file_name))
+      puts "File #{file_name} saved as #{saved_file_name} in build dir to be kept in artifacts"
+    end
   end
 end
