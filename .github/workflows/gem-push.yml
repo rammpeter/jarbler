@@ -72,7 +72,7 @@ jobs:
         name: ${{ matrix.os }}_${{ matrix.ruby }}
         path: |
           log/test.log
-          *.jar
+          test_*.jar
 
   build:
     name: Build + Publish

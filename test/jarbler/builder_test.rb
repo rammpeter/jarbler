@@ -87,7 +87,7 @@ end
         assert_jar_file(Dir.pwd)
         stdout, stderr, status = exec_and_log("java -jar hugo.jar -c -d", env: env_to_remove)
 
-        save_artifact_on_failure('test_executable_and_params', 'hugo.jar', base_dir, status)
+        save_artifact_on_failure('executable_and_params', 'hugo.jar', base_dir, status)
 
         response_match = stdout.lines.select{|s| s == "hugo:[\"-a\", \"-b\", \"-c\", \"-d\"]\n" } # extract the response line from debug output of hugo.jar
         assert !response_match.empty?, "Response should contain the executable params but is:\n#{stdout}\n"
@@ -177,7 +177,7 @@ puts Base64.encode64('Secret')  # Check function of Gem
         ENV['DEBUG'] = 'true'
         stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
 
-        save_artifact_on_failure('test_uncompiled_with_gem_dependency', Jarbler::Config.create.jar_name, base_dir, status)
+        save_artifact_on_failure('uncompiled_with_gem_dependency', Jarbler::Config.create.jar_name, base_dir, status)
 
         assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
         # Ensure that the output contains the expected strings
@@ -255,7 +255,7 @@ end
         end
         stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
 
-        save_artifact_on_failure('test_compiled', Jarbler::Config.create.jar_name, base_dir, status)
+        save_artifact_on_failure('compiled', Jarbler::Config.create.jar_name, base_dir, status)
 
         assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
         # Ensure that the output contains the expected strings
@@ -323,7 +323,7 @@ end
         end
         stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
 
-        save_artifact_on_failure('test_compiled_for_java8', Jarbler::Config.create.jar_name, base_dir, status)
+        save_artifact_on_failure('compiled_for_java8', Jarbler::Config.create.jar_name, base_dir, status)
 
         assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
         # Ensure that the output contains the expected strings
@@ -471,7 +471,7 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
       end
       stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
 
-      save_artifact_on_failure('test_extension', Jarbler::Config.create.jar_name, base_dir, status)
+      save_artifact_on_failure('extension', Jarbler::Config.create.jar_name, base_dir, status)
 
       assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
       # Ensure that the output contains the expected strings
@@ -635,7 +635,7 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
   # @param [Process::Status] status the call result
   def save_artifact_on_failure(test_name, file_name, base_dir, status)
     if !status.success? # save jar file as artifact
-      saved_file_name = "#{test_name}_#{file_name}"
+      saved_file_name = "test_#{test_name}_#{file_name}"
       FileUtils.cp(file_name, File.join(base_dir, saved_file_name))
       puts "File #{file_name} saved as #{saved_file_name} in build dir to be kept in artifacts"
     end
