@@ -169,12 +169,17 @@ puts Base64.encode64('Secret')  # Check function of Gem
                                               "config.includes << 'test.rb'",
                                               jruby_version_test_config_line
                                             ])
-      with_prepared_gemfile("gem 'base64'") do
+      with_prepared_gemfile(["gem 'base64'", "gem 'jar-dependencies', '0.5.4'"]) do
         @builder.build_jar
         ENV['DEBUG'] = 'true'
         stdout, _stderr, _status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)
         # Ensure that the output contains the expected strings
         assert stdout.include?('U2VjcmV0'), "stdout should contain result of Base64.encode64('Secret')  but is:\n#{stdout}\n"
+        assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
+          expected_dir = "gems/*/*/gems/jar-dependencies-0.5.4"
+          assert !Dir.glob(expected_dir).empty?, "Dir #{expected_dir} should be in jar file"
+        end
+
       end
     end
   end
@@ -471,8 +476,8 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
     Bundler.with_unbundled_env do # No previous setting inherited like Gemfile location
       Bundler.reset! # Reset settings from previous Bundler.with_unbundled_env
       debug "Gem path afterBundler.reset! : #{Gem.paths.path}"
-      definition = Bundler.definition
-      definition.resolve_remotely! # Resolve remote dependencies for Gemfile.lock
+      definition = Bundler.definition                                           # Read Gemfile definition
+      definition.resolve_remotely!                                              # Resolve remote dependencies for Gemfile.lock
       # Write the new Gemfile.lock file
       File.open('Gemfile.lock', 'w') do |file|
         file.write(Bundler::LockfileGenerator.generate(definition))
