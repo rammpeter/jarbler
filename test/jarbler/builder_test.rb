@@ -581,8 +581,11 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
   # remove the environment variables that should not be set for called commands
   # @return [Hash] The environment variables to remove
   def env_to_remove
+    debug "BuilderTest.env_to_remove: ENV before check is:\n"
+    ENV.sort.each {|k,v| debug "                #{k}: #{v}"}
+
     result = {}
-    ENV.to_h.each do |key, value|
+    ENV.each do |key, value|
       if key['GEM'] || key['BUNDLE'] || key['RUBY']
         result[key] = nil
         debug "Env. removed for following call #{key} = '#{value}'"
