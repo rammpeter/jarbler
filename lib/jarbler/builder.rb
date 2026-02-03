@@ -87,6 +87,18 @@ module Jarbler
       end
     end
 
+    # get the resulting extension target dir
+    # Accept that JRuby >= 10.0.3.0 uses "universal-java" where JRuby < 10.0.3.0 has used "universal-java-<Java major version>"
+    # "universal-java-XX" is replaced with the correct platform for the current Java version after unzipping of the jar file
+    # @return [String] the dir name to use in the jar file for extensions
+    def universal_java_dir_for_extensions
+      if Gem::Version.new(config.jruby_version) < Gem::Version.new('10.0.3.0')
+        'universal-java-XX'                                    # up to 10.0.2.0 the Java major version was added to the platform
+      else
+        'universal-java'                                       # JRuby 10.0.3.0 skipped the  Java major version from the platform attribute
+      end
+    end
+
     private
 
     # Copy the needed Gems to the staging directory
@@ -95,9 +107,7 @@ module Jarbler
     # @return [void]
     def copy_needed_gems_to_staging(staging_dir, ruby_minor_version)
       gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_minor_version}"
-
-      # Replace universal-java-XX with the correct platform for the current Java version after unzipping of the jar file
-      extension_target_location = "#{gem_target_location}/extensions/universal-java-XX/#{ruby_minor_version}"
+      extension_target_location = "#{gem_target_location}/extensions/#{universal_java_dir_for_extensions}/#{ruby_minor_version}"
 
       FileUtils.mkdir_p("#{gem_target_location}/bin")
       FileUtils.mkdir_p("#{gem_target_location}/build_info")
@@ -110,9 +120,9 @@ module Jarbler
       FileUtils.mkdir_p("#{gem_target_location}/bundler/gems")
 
       needed_gems = gem_dependencies  # get the full names of the dependencies
+      specs = Bundler.definition.specs                                          # Get all specs for Gems from Gemfile.lock
       needed_gems.each do |needed_gem|
-        # Get the location of the needed gem
-        spec = Gem::Specification.find_by_name(needed_gem[:name], needed_gem[:version])
+        spec = specs.find { |s| s.name == needed_gem[:name] && s.version == needed_gem[:version] }
         raise "Gem #{needed_gem[:full_name]} not found for copying" unless spec
         debug "Gem #{needed_gem[:full_name]} version #{needed_gem[:version]} should be in #{spec.gem_dir}"
         raise "Gem dir for #{needed_gem[:full_name]} version #{needed_gem[:version]} not found at location specified by Gem::Specification ( #{spec.gem_dir} )" unless Dir.exist?(spec.gem_dir)
@@ -123,12 +133,10 @@ module Jarbler
           debug "Adding Bundler Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
           spec.executables.each do |executable|
-            debug "Adding executable of Bundler Gem from dir '#{spec.bin_dir}#{executable}/' into jar file at temporary location '#{gem_target_location}/bundler/bin'"
+            debug "Adding executable of Bundler Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bundler/bin'"
             file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bundler/bin")
           end
         else  # Gem is from rubygems
-          # TODO: Gemfile could request a different version of default gem compared to the one jruby jars
-          #       Should the default gems are also copied to the staging directory?
           unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
             # copy the Gem and gemspec separately
             debug "Adding local Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
@@ -143,7 +151,7 @@ module Jarbler
             # spec.loaded_from contains the path to the gemspec file including the path prefix "default/" for default gems
             file_utils_copy(spec.loaded_from, "#{gem_target_location}/specifications")
             spec.executables.each do |executable|
-              debug "Adding executable of local Gem from dir '#{spec.bin_dir}#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
+              debug "Adding executable of local Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
               file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
             end
           end
@@ -158,11 +166,12 @@ module Jarbler
     # @return [Array] Array with Hashes containing: name, version, full_name
     def gem_dependencies
       needed_gems = []
+
       lockfile_parser = Bundler::LockfileParser.new(Bundler.read_file(Bundler.default_lockfile))
       lockfile_specs = lockfile_parser.specs
+      # Bundler.definition.specs possibly contains the same information like lockfile_specs
 
-      Bundler.setup(*config.gemfile_groups) # Load Gems specified in Gemfile, ensure that Gem path also includes the Gems loaded into bundler dir
-      # filter Gems needed for production
+      # filter Gems needed for the desired groups (eg. production)
       gemfile_specs = Bundler.definition.dependencies.select do |d|
         !(d.groups & config.gemfile_groups).empty?        # Check if the Gem is in the groups specified in config.gemfile_groups
       end

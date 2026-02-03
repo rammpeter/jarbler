@@ -1,12 +1,19 @@
 ## [Unreleased]
 
+## [0.4.4] - 2026-02-03
+
+- Version conflicts with installed system default gems are fixed. <br/>
+  This is done by supressing the load/activate of the target gems during the jar file build.
+- Platforms attribute for JRuby 10.0.3.0 is "universal-java" now, without the previous suffix with Java major number.<br/>
+  So, replacement of "universal-java-XX" directories in jar file with current Java major number at jar startup isn't necessary for recent JRuby versions 
+
 ## [0.4.3] - 2025-07-29
 
 - Enable Ruby and JRuby warnings ($VERBOSE = true) in call of 'jarble' if environment variable `DEBUG` is set 
 
 ## [0.4.2] - 2025-07-24
 
-- Native Gem extensions are also copied into the jar file if the Gem has a native extension<br/>
+- Native gem extensions are also copied into the jar file if the gem has a native extension<br/>
   If the extension is of platform type 'universal-java-XX' then the 'XX' in the dir name 'universal-java-XX' is corrected with the real Java major version at start of the jar file.<br/>
   Extensions of other platform types are copied as is.
 
@@ -35,8 +42,8 @@
 
 - Warning if Ruby-specific environment variables (GEM_HOME etc.) are set which may cause malfunction of  app in jar file
 - Accept jar file locations with blanks in the path, especially for Windows
-- Setting `compile_ruby_files=true` compiles only .rb file of the application, but does not compile the .rb files in Gems.<br/>
-  Compiling the Gems also remains an open task.
+- Setting `compile_ruby_files=true` compiles only .rb file of the application, but does not compile the .rb files in gems.<br/>
+  Compiling the gems also remains an open task.
 - Bugfix: Accept spaces in the path to the jar file, especially for Windows
 
 ## [0.3.1] - 2024-07-02
@@ -72,11 +79,11 @@
 
 ## [0.1.5] - 2023-06-15
 
-- Bugfix: use minor ruby version without patch level for Gem files location
+- Bugfix: use minor ruby version without patch level for gem files location
 
 ## [0.1.4] - 2023-04-28
 
-- Jarbler also supports Gemfile references to Gems with git dependencies now
+- Jarbler also supports Gemfile references to gems with git dependencies now
 
 ## [0.1.3] - 2023-04-25
 
@@ -84,7 +91,7 @@
 
 ## [0.1.2] - 2023-04-24
 
-- extract valid Gem paths from Bundler instead of using the environment variable GEM_PATH
+- extract valid gem paths from Bundler instead of using the environment variable GEM_PATH
 
 ## [0.1.1] - 2023-04-24
 

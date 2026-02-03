@@ -4,6 +4,7 @@
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/vcs.xml
+/.idea/copilot.data.migration.agent.xml
 /Gemfile.lock
 /coverage/.last_run.json
 /coverage/.resultset.json.lock
@@ -12,3 +13,4 @@
 /scratch.log
 /scratch.rb
 /test_env.rb
+/test*.jar
