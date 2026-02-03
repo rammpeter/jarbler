@@ -591,6 +591,22 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
         debug "Env. removed for following call #{key} = '#{value}'"
       end
     end
+
+    # Overwrite variables that may exist in Windows (e.g. readable in Java per System.getenv) but are not contained in ENV
+    toxicEntries = [
+      "BUNDLE_BIN_PATH",
+      "BUNDLE_GEMFILE",
+      "BUNDLER_SETUP",
+      "BUNDLER_VERSION",
+      "GEM_HOME",
+      "GEM_PATH",
+      "RUBYLIB",
+      "RUBYOPT",
+      "RUBYPATH",
+      "RUBYSHELL"
+    ]
+    toxicEntries.each { |entry| result[entry] = nil }
+
     result
   end
 
