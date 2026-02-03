@@ -123,7 +123,7 @@ module Jarbler
           debug "Adding Bundler Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
           file_utils_copy(spec.gem_dir, "#{gem_target_location}/bundler/gems")
           spec.executables.each do |executable|
-            debug "Adding executable of Bundler Gem from dir '#{spec.bin_dir}#{executable}/' into jar file at temporary location '#{gem_target_location}/bundler/bin'"
+            debug "Adding executable of Bundler Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bundler/bin'"
             file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bundler/bin")
           end
         else  # Gem is from rubygems
@@ -141,7 +141,7 @@ module Jarbler
             # spec.loaded_from contains the path to the gemspec file including the path prefix "default/" for default gems
             file_utils_copy(spec.loaded_from, "#{gem_target_location}/specifications")
             spec.executables.each do |executable|
-              debug "Adding executable of local Gem from dir '#{spec.bin_dir}#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
+              debug "Adding executable of local Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
               file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
             end
           end
