@@ -1,9 +1,11 @@
 ## [Unreleased]
 
-## [0.4.4] - 2026-02-02
+## [0.4.4] - 2026-02-03
 
-- Avoid conflicts with installed system default gems. <br/>
+- Version conflicts with installed system default gems are fixed. <br/>
   This is done by supressing the load/activate of the target gems during the jar file build.
+- Platforms attribute for JRuby 10.0.3.0 is "universal-java" now, without the previous suffix with Java major number.<br/>
+  So, replacement of "universal-java-XX" directories in jar file with current Java major number at jar startup isn't necessary for recent JRuby versions 
 
 ## [0.4.3] - 2025-07-29
 

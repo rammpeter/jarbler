@@ -438,12 +438,17 @@ end
     in_temp_dir do |base_dir|
       File.open('test.rb', 'w') do |file|
         file.write("\
+require 'bundler'
+require 'bundler/setup'
 require 'erb'
 puts 'REQUIRE SURVIVED'
+Bundler.require
+puts 'Bundler.require SURVIVED'
+
 # Check if the extension is loaded correctly
-# The unspecific extension dir universal-java-XX should be renamed
+# The unspecific extension dir universal-java-XX should be renamed or universal-java is used for JRuby 10.0.3.0 ++
 if Dir.glob('../gems/jruby/*/extensions/universal-java-XX').empty?
-  puts 'Extension dir universal-java-XX does not exist no more'
+  puts 'Extension dir universal-java-XX does not exist no more. This is the expected behavior.'
 end
 
 puts Dir.pwd
@@ -461,12 +466,12 @@ puts Dir.glob('../gems/jruby/*/extensions/*').inspect
         ruby_minor_version = @builder.build_jar
         assert_jar_file(Dir.pwd) do
           assert !Dir.glob("gems/jruby/#{ruby_minor_version}/gems/erb*").empty?, "Gem erb should be included in jar file"
-          if Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?
-            puts "gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb* not found"
-            puts Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/*").inspect
+          if Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/#{@builder.universal_java_dir_for_extensions}/#{ruby_minor_version}/erb*").empty?
+            puts "gems/jruby/#{ruby_minor_version}/extensions/#{@builder.universal_java_dir_for_extensions}/#{ruby_minor_version}/erb* not found"
+            puts Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/#{@builder.universal_java_dir_for_extensions}/*").inspect
             sleep 1
           end
-          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/universal-java-XX/#{ruby_minor_version}/erb*").empty?, "Extension for erb should be included in jar file"
+          assert !Dir.glob("gems/jruby/#{ruby_minor_version}/extensions/#{@builder.universal_java_dir_for_extensions}/#{ruby_minor_version}/erb*").empty?, "Extension for erb should be included in jar file"
         end
       end
       stdout, stderr, status = exec_and_log("java -jar #{Jarbler::Config.create.jar_name}", env: env_to_remove)

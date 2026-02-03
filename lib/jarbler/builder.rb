@@ -87,6 +87,18 @@ module Jarbler
       end
     end
 
+    # get the resulting extension target dir
+    # Accept that JRuby >= 10.0.3.0 uses "universal-java" where JRuby < 10.0.3.0 has used "universal-java-<Java major version>"
+    # "universal-java-XX" is replaced with the correct platform for the current Java version after unzipping of the jar file
+    # @return [String] the dir name to use in the jar file for extensions
+    def universal_java_dir_for_extensions
+      if Gem::Version.new(config.jruby_version) < Gem::Version.new('10.0.3.0')
+        'universal-java-XX'                                    # up to 10.0.2.0 the Java major version was added to the platform
+      else
+        'universal-java'                                       # JRuby 10.0.3.0 skipped the  Java major version from the platform attribute
+      end
+    end
+
     private
 
     # Copy the needed Gems to the staging directory
@@ -95,9 +107,7 @@ module Jarbler
     # @return [void]
     def copy_needed_gems_to_staging(staging_dir, ruby_minor_version)
       gem_target_location = "#{staging_dir}/gems/jruby/#{ruby_minor_version}"
-
-      # Replace universal-java-XX with the correct platform for the current Java version after unzipping of the jar file
-      extension_target_location = "#{gem_target_location}/extensions/universal-java-XX/#{ruby_minor_version}"
+      extension_target_location = "#{gem_target_location}/extensions/#{universal_java_dir_for_extensions}/#{ruby_minor_version}"
 
       FileUtils.mkdir_p("#{gem_target_location}/bin")
       FileUtils.mkdir_p("#{gem_target_location}/build_info")

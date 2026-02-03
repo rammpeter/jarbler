@@ -251,7 +251,7 @@ class JarMain {
     try {
         String destFileName = zipEntry.getName();
 
-        // the platform name in extension dir depends on the the target java version, therfore we replace the platform name here
+        // the platform name in extension dir depends on the the target java version, therefore we replace the platform name here
         if (destFileName.contains("universal-java-XX")) {
             String newPlatformName = "universal-java-" + javaMajorRelease4RubyPlatform();
             debug ("Replacing platform name in file '" + destFileName + "' from 'universal-java-XX' to '" + newPlatformName + "'");
