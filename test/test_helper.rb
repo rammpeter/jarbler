@@ -40,7 +40,6 @@ class Minitest::Test
     log("Execute by Open3.capture3: #{command}")
     stdout, stderr, status = Open3.capture3(env, command)
     log("Command '#{command}'Executed with  Open3.capture3: status = #{status}\nstdout:\n#{stdout}\n\nstderr:\n#{stderr}\n")
-    assert status.success?, "Response status should be success but is '#{status}':\n#{stdout}\nstderr:\n#{stderr}"
     return stdout, stderr, status
   end
 

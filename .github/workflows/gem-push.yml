@@ -32,7 +32,7 @@ jobs:
       packages: write
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: Set up JDK 21 if jruby-head or jruby is used which is JRuby 10++ now
       if: matrix.ruby == 'jruby-head' || matrix.ruby == 'jruby'
@@ -51,9 +51,11 @@ jobs:
       env:
         DEBUG: true
       run: |
+        # !!! These commands must be executable in windows, macos and linux !!!
         # Use the last version of bundler that supports Ruby < 3.0
-        echo "Java version"
         java -version
+        ruby --version
+        ruby -e "puts 'Ruby platform = ' + RUBY_PLATFORM"
         gem install bundler -v 2.4.22
         bundle --version
         which bundler
@@ -67,8 +69,10 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}_${{ matrix.ruby }}_test.log
-        path: log/test.log
+        name: ${{ matrix.os }}_${{ matrix.ruby }}
+        path: |
+          log/test.log
+          test_*.jar
 
   build:
     name: Build + Publish
@@ -80,7 +84,7 @@ jobs:
       packages: write
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: '3.1'
