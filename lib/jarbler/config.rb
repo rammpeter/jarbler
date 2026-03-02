@@ -26,7 +26,7 @@ module Jarbler
         config = Jarbler::Config.new
       end
       unless config.class == Jarbler::Config
-        Jarbler.debug "No valid config provided in #{CONFIG_FILE}! Using defaults."
+        puts "No valid config provided in #{CONFIG_FILE}! Using defaults."
         config = Config.new
       end
       config.define_jruby_version
@@ -52,7 +52,7 @@ module Jarbler
       puts "  includes:                 #{config.includes}"
       puts "  jar_name:                 #{config.jar_name}"
       puts "  java_opts:                #{config.java_opts}"
-      puts "  jrubyc_opts:              #{config.jruby_version}" if config.compile_ruby_files
+      puts "  jrubyc_opts:              #{config.jrubyc_opts}" if config.compile_ruby_files
       puts "  jruby_version:            #{config.jruby_version}"
       puts ""
       config

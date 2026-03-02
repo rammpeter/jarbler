@@ -181,7 +181,7 @@ module Jarbler
         # find lockfile record for Gemfile spec
         lockfile_spec = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == gemfile_spec.name }
         if lockfile_spec
-          unless needed_gems.map{|n| n[:fullname]}.include?(lockfile_spec.full_name)
+          unless needed_gems.map{|n| n[:full_name]}.include?(lockfile_spec.full_name)
             needed_gems << { full_name: lockfile_spec.full_name, name: lockfile_spec.name, version: lockfile_spec.version }
           end
           debug "Direct Gem dependency: #{lockfile_spec.full_name}"
@@ -211,7 +211,7 @@ module Jarbler
         lockfile_spec_found = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == lockfile_spec_dep.name }
         if lockfile_spec_found
           debug "Indirect Gem dependency from #{lockfile_spec.full_name}: #{lockfile_spec_found.full_name}"
-          unless needed_gems.map{|n| n[:fullname]}.include?(lockfile_spec_found.full_name)
+          unless needed_gems.map{|n| n[:full_name]}.include?(lockfile_spec_found.full_name)
             needed_gems << { full_name: lockfile_spec_found.full_name, name: lockfile_spec_found.name, version: lockfile_spec_found.version }
             add_indirect_dependencies(lockfile_specs, lockfile_spec_found, needed_gems)
           end
