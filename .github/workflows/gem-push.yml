@@ -4,8 +4,8 @@ on:
   push:
   pull_request:
   schedule:
-    # * is a special character in YAML so you have to quote this string, runs on each day of the week at 00:00 UTC
-    - cron: '0 0 * * *'
+    # * is a special character in YAML so you have to quote this string, runs once a week o Sunday at 04:00 UTC
+    - cron: '0 4 * * 0'
 
 
 jobs:
