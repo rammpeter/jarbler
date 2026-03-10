@@ -157,10 +157,12 @@ class JarMain {
             //debug("JRuby set property 'jruby.gem.home' to '" + full_gem_home + "'");
             //System.setProperty("jruby.gem.home", full_gem_home);
 
-            // Enable JRuby warnings, not proof to really function
-            System.setProperty("jruby.log.warnings", "true");
-            System.setProperty("jruby.cli.verbose",  "true");
-            // System.setProperty("jruby.debug.fullTrace",  "true");
+            // Enable JRuby warnings
+             if (debug_active()) {
+                System.setProperty("jruby.log.warnings", "true");
+                System.setProperty("jruby.cli.verbose",  "true");
+                // System.setProperty("jruby.debug.fullTrace",  "true");
+             }
 
             debug("JRuby program starts with the following arguments: ");
             for (String arg : mainArgs) {

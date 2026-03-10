@@ -70,7 +70,8 @@ The default configuration is focused on Ruby on Rails applications.<br>
 
 ## Troubleshooting
 * Set DEBUG=true in OS environment to get additional runtime information
-* The temporary folder with the extracted app and JRuby runtime files is not deleted after execution if DEBUG is set.
+* The temporary folder with the extracted app and JRuby runtime files is not deleted after execution if DEBUG is set.<br/>
+  This is the case for execution of `jarble` as well as for execution of the created jar file. 
 
 ### Possible error messages
 * Gem::LoadError: You have already activated ..., but your Gemfile requires ... . Since ... is a default gem, you can either remove your dependency on it or try updating to a newer version of bundler that supports net-protocol as a default gem.

@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [0.4.5] - 2026-03-10
+- Show JRuby warnings at execution of jar file only if environment variable `DEBUG` is set to 'true'
+
 ## [0.4.4] - 2026-02-03
 
 - Version conflicts with installed system default gems are fixed. <br/>
