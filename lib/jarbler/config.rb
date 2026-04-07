@@ -5,6 +5,7 @@ module Jarbler
   class Config
     attr_accessor :compile_java_version,            # compile_java_version only for backward compatibility, use java_opts instead
                   :compile_ruby_files,
+                  :excluded_gems,
                   :excludes,
                   :excludes_from_compile,
                   :executable,
@@ -44,6 +45,7 @@ module Jarbler
       end
       puts "Used configuration values are:"
       puts "  compile_ruby_files:       #{config.compile_ruby_files}"
+      puts "  excluded_gems:            #{config.excluded_gems}" unless config.excluded_gems.empty?
       puts "  excludes:                 #{config.excludes}"
       puts "  excludes_from_compile:    #{config.excludes_from_compile}" if config.compile_ruby_files
       puts "  executable:               #{config.executable}"
@@ -61,6 +63,7 @@ module Jarbler
     def initialize
       @compile_ruby_files     = false
       @compile_java_version   = nil                                               # deprecated, use java_opts instead
+      @excluded_gems           = []
       @excludes               = %w(tmp/cache tmp/pids tmp/sockets vendor/bundle vendor/cache vendor/ruby)
       @excludes_from_compile  = []
       @executable             = 'bin/rails'
@@ -81,6 +84,12 @@ module Jarbler
 # Compile the ruby files of the project to Java .class files with JRuby's ahead-of-time compiler?
 # the original ruby files are not included in the jar file, so source code is not visible
 # config.compile_ruby_files = #{compile_ruby_files}
+
+# Exclude certain gems from being included in the jar file.
+# Gems specified in 'exclude_gems' are not included in the jar file and not available at runtime.
+# This allows to exclude gems which are dependencies of other gems
+# that are not needed for the application and are excluded from initialization by 'gem name, require: false'.
+# config.excluded_gems = #{excluded_gems}
 
 # Application directories or files to exclude from the jar file
 # config.excludes = #{excludes}
@@ -192,6 +201,7 @@ module Jarbler
     def validate_values
       raise "compile_java_version is not valid any more! Use config.java_opts instead with -source and -target." if compile_java_version
       raise "Invalid config value for jar name: #{jar_name}" unless jar_name =~ /\w+/
+      raise "Invalid config value for excluded_gems: #{excluded_gems}" unless @excluded_gems.is_a?(Array)
       raise "Invalid config value for executable: #{executable}" unless executable =~ /\w+/
       raise "Invalid config value for executable params: #{executable_params}" unless executable_params.is_a?(Array)
       raise "Invalid config value for gemfile groups: #{gemfile_groups}" unless gemfile_groups.is_a?(Array)

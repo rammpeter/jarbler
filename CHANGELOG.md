@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [0.4.6] - 2026-04-07
+- New config attribute 'exclude_gems' to exclude certain gems from being included in the jar file. <br/>
+  Gems specified in 'exclude_gems' are not included in the jar file and not available at runtime. <br/>
+  This allows to exclude gems which are dependencies of other gems that are not needed for the application and are excluded from initialization by 'gem name, require: false'.
+
 ## [0.4.5] - 2026-03-10
 - Show JRuby warnings at execution of jar file only if environment variable `DEBUG` is set to 'true'
 

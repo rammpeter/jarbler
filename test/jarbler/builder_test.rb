@@ -96,6 +96,29 @@ end
     end
   end
 
+  # Check that gem to be excluded is not part of the jar file
+  def test_excluded_gems
+    in_temp_dir do |base_dir|
+      FileUtils.mkdir_p('.bundle')
+      File.open('.bundle/config', 'w') do |file|
+        file.write("---\nBUNDLE_PATH: \"vendor/bundle\"\n")
+      end
+      Jarbler::Config.new.write_config_file([
+                                              jruby_version_test_config_line,
+                                              "config.excluded_gems = ['minitest']"
+                                            ])
+      with_prepared_gemfile(["gem 'minitest'"]) do
+        @builder.build_jar
+        assert_jar_file(Dir.pwd) do # we are in the dir of the extracted jar file
+          expected_dir = "gems/*/*/gems/minitest*"
+          assert Dir.glob(expected_dir).empty?, "Dir #{expected_dir} should not be in jar file"
+        end
+      end
+    end
+  end
+
+
+
   def test_exclude_dirs_removed
     in_temp_dir do
       # create the file/dir to exclude

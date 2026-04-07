@@ -139,20 +139,26 @@ module Jarbler
         else  # Gem is from rubygems
           unless spec.default_gem?  # Do not copy default gems, because they are already included in the jruby jars standard library
             # copy the Gem and gemspec separately
-            debug "Adding local Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
-            file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems")
-
-            if spec.extension_dir && Dir.exist?(spec.extension_dir)
-              debug "Adding extension from dir '#{spec.extension_dir}' into jar file at temporary location '#{extension_target_location}'"
-              puts "Adding extension from dir '#{spec.extension_dir}' into jar file but extension is not for platform 'universal-java-xx'!!!" unless spec.extension_dir['universal-java']
-              file_utils_copy(spec.extension_dir, extension_target_location)
-            end
 
             # spec.loaded_from contains the path to the gemspec file including the path prefix "default/" for default gems
             file_utils_copy(spec.loaded_from, "#{gem_target_location}/specifications")
-            spec.executables.each do |executable|
-              debug "Adding executable of local Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
-              file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
+
+            unless config.excluded_gems.include?(needed_gem[:name])             # only the spec file needs to be included for excluded_gems
+              debug "Adding local Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
+              file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems") unless config.excluded_gems.include?(needed_gem[:name])
+
+              if spec.extension_dir && Dir.exist?(spec.extension_dir)
+                debug "Adding extension from dir '#{spec.extension_dir}' into jar file at temporary location '#{extension_target_location}'"
+                puts "Adding extension from dir '#{spec.extension_dir}' into jar file but extension is not for platform 'universal-java-xx'!!!" unless spec.extension_dir['universal-java']
+                file_utils_copy(spec.extension_dir, extension_target_location)
+              end
+
+              spec.executables.each do |executable|
+                debug "Adding executable of local Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
+                file_utils_copy("#{spec.bin_dir}/#{executable}", "#{gem_target_location}/bin")
+              end
+            else
+              debug "Skipping copy of excluded gem #{needed_gem[:name]} version #{needed_gem[:version]} from dir '#{spec.gem_dir}' into jar file"
             end
           end
         end
