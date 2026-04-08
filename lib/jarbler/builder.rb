@@ -143,15 +143,23 @@ module Jarbler
             # spec.loaded_from contains the path to the gemspec file including the path prefix "default/" for default gems
             file_utils_copy(spec.loaded_from, "#{gem_target_location}/specifications")
 
-            unless config.excluded_gems.include?(needed_gem[:name])             # only the spec file needs to be included for excluded_gems
-              debug "Adding local Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
-              file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems") unless config.excluded_gems.include?(needed_gem[:name])
-
-              if spec.extension_dir && Dir.exist?(spec.extension_dir)
+            # Extensions are needed even if config.excluded_gems includes the Gem
+            if spec.extension_dir && Dir.exist?(spec.extension_dir)
+              unless config.excluded_gems.include?(needed_gem[:name])
                 debug "Adding extension from dir '#{spec.extension_dir}' into jar file at temporary location '#{extension_target_location}'"
                 puts "Adding extension from dir '#{spec.extension_dir}' into jar file but extension is not for platform 'universal-java-xx'!!!" unless spec.extension_dir['universal-java']
                 file_utils_copy(spec.extension_dir, extension_target_location)
+              else
+                faked_extension_dir = File.join(extension_target_location, needed_gem[:full_name])
+                debug "Faking empty extension dir '#{faked_extension_dir}' with gem.build_complete only for excluded gem"
+                Dir.mkdir(faked_extension_dir)
+                FileUtils.touch(File.join(faked_extension_dir, 'gem.build_complete'))
               end
+            end
+
+            unless config.excluded_gems.include?(needed_gem[:name])             # only the spec file needs to be included for excluded_gems
+              debug "Adding local Gem from dir '#{spec.gem_dir}' into jar file at temporary location '#{gem_target_location}/gems'"
+              file_utils_copy(spec.gem_dir, "#{gem_target_location}/gems") unless config.excluded_gems.include?(needed_gem[:name])
 
               spec.executables.each do |executable|
                 debug "Adding executable of local Gem from dir '#{spec.bin_dir}/#{executable}/' into jar file at temporary location '#{gem_target_location}/bin'"
@@ -190,7 +198,7 @@ module Jarbler
           unless needed_gems.map{|n| n[:full_name]}.include?(lockfile_spec.full_name)
             needed_gems << { full_name: lockfile_spec.full_name, name: lockfile_spec.name, version: lockfile_spec.version }
           end
-          debug "Direct Gem dependency: #{lockfile_spec.full_name}"
+          debug "Direct Gem dependency: #{lockfile_spec.full_name}#{" : Gem should by excluded in jar according to 'excluded_gems'" if config.excluded_gems.include?(lockfile_spec.name)}"
           add_indirect_dependencies(lockfile_specs, lockfile_spec, needed_gems)
         else
           if gemfile_spec.name == 'bundler'
@@ -216,7 +224,7 @@ module Jarbler
       lockfile_spec.dependencies.each do |lockfile_spec_dep|
         lockfile_spec_found = lockfile_specs.find { |lockfile_spec| lockfile_spec.name == lockfile_spec_dep.name }
         if lockfile_spec_found
-          debug "Indirect Gem dependency from #{lockfile_spec.full_name}: #{lockfile_spec_found.full_name}"
+          debug "Indirect Gem dependency from #{lockfile_spec.full_name}: #{lockfile_spec_found.full_name}#{" : Gem should be excluded in jar according to 'excluded_gems'" if config.excluded_gems.include?(lockfile_spec_found.name)}"
           unless needed_gems.map{|n| n[:full_name]}.include?(lockfile_spec_found.full_name)
             needed_gems << { full_name: lockfile_spec_found.full_name, name: lockfile_spec_found.name, version: lockfile_spec_found.version }
             add_indirect_dependencies(lockfile_specs, lockfile_spec_found, needed_gems)

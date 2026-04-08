@@ -1,8 +1,11 @@
 ## [Unreleased]
 
+## [0.4.7] - 2026-04-08
+- Enhance 'excluded_gems' so that an empty extension dir with 'gem.build_complete' is included in jar file 
+
 ## [0.4.6] - 2026-04-07
-- New config attribute 'exclude_gems' to exclude certain gems from being included in the jar file. <br/>
-  Gems specified in 'exclude_gems' are not included in the jar file and not available at runtime. <br/>
+- New config attribute 'excluded_gems' to exclude certain gems from being included in the jar file. <br/>
+  Gems specified in 'excluded_gems' are not included in the jar file and not available at runtime. <br/>
   This allows to exclude gems which are dependencies of other gems that are not needed for the application and are excluded from initialization by 'gem name, require: false'.
 
 ## [0.4.5] - 2026-03-10
